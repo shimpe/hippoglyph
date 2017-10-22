@@ -89,11 +89,14 @@ def unwarp(image):
             screenCnt = approx
             break
 
+    if len(screenCnt) == 0:
+        return None
+
     warped = four_point_transform(img_scale, screenCnt.reshape(4, 2))
     height = warped.shape[0]
     width = warped.shape[1]
     # print ("width: {0}, height: {1}".format(width, height))
-    xmargin = 2
+    xmargin =10
     ymargin = 10
     crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
     warped_copy = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY);
@@ -231,11 +234,12 @@ def find_contours(image):
     found = set({})
     for c in contours3:
         M = cv2.moments(c)
-        cx = int(int(M['m10'] / M['m00']))
-        cy = int(int(M['m01'] / M['m00']))
-        if (cx, cy) not in found:
-            found.add((cx, cy))
-            cnts.append((cy, cx, c))
+        if M['m00']:
+            cx = int(int(M['m10'] / M['m00']))
+            cy = int(int(M['m01'] / M['m00']))
+            if (cx, cy) not in found:
+                found.add((cx, cy))
+                cnts.append((cy, cx, c))
     return cnts
 
 def dist(x1, y1, x2, y2):
@@ -347,6 +351,7 @@ def cleanup_word(word, use_spellcheck=True):
 def main():
     bindir = "/home/shimpe/development/python/ocr/EMNIST/bin"
     image = cv2.imread("/home/shimpe/development/python/ocr/img.jpg")
+    cv2.imshow("original", image)
     model = load_model(bindir)
     mapping = pickle.load(open('%s/mapping.p' % bindir, 'rb'))
 
@@ -366,10 +371,10 @@ def main():
         words.append(cleanup_word(current_word))
 
     print(" ".join(words))
-    #cv2.imshow("letters", letter_image)
+    cv2.imshow("letters", letter_image)
 
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
