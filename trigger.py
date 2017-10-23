@@ -1,9 +1,10 @@
 import numpy as np
-
-from PyQt5.QtWidgets import QGraphicsEllipseItem
-from PyQt5.QtGui import QBrush, QColor, QRadialGradient, QPen
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QBrush, QColor, QRadialGradient, QPen
+from PyQt5.QtWidgets import QGraphicsEllipseItem
+
 from constants import FS
+
 
 class Trigger(object):
     def __init__(self, x, y, color):
@@ -36,7 +37,7 @@ class Trigger(object):
             self.time = 0
         self.circle.setRect(self.x, self.y, self.scale, self.scale)
         self.circle.setPen(QPen(Qt.NoPen))
-        radgrad = QRadialGradient(self.x + self.scale/2.0, self.y + self.scale, self.scale, self.x, self.y)
+        radgrad = QRadialGradient(self.x + self.scale / 2.0, self.y + self.scale, self.scale, self.x, self.y)
         radgrad.setColorAt(0, QColor(0, 255, 0, 255));
         radgrad.setColorAt(1, QColor(255, 255, 255, 0));
         self.circle.setBrush(QBrush(radgrad))
@@ -44,7 +45,7 @@ class Trigger(object):
     def update(self, deltat):
         if self.circle is not None:
             self.time = self.time + 0.3
-            self.scale = self.scale + np.sin(2*np.pi*1/FS*self.time/250)
+            self.scale = self.scale + np.sin(2 * np.pi * 1 / FS * self.time / 250)
             self.add_to_scene(self.scene, self.min_x, self.min_y, self.max_x, self.max_y)
 
     def collidesWithItem(self, item):

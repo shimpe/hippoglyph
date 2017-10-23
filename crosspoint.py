@@ -1,11 +1,13 @@
-import numpy as np
 import random
-from PyQt5.QtWidgets import QGraphicsTextItem, QGraphicsLineItem
+
+import numpy as np
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPen, QFont
-from constants import THIN, THICK
+from PyQt5.QtWidgets import QGraphicsTextItem, QGraphicsLineItem
 
+from constants import THIN, THICK
 from linecalc import LineCalc
+
 
 class CrossPoint(object):
     def __init__(self, x, y, label, no_of_rays, color):
@@ -35,7 +37,7 @@ class CrossPoint(object):
 
     def add_to_scene(self, scene, min_x, min_y, max_x, max_y):
         if None in self.lines:
-            self.lines = [ QGraphicsLineItem() for i in range(self.rays)]
+            self.lines = [QGraphicsLineItem() for i in range(self.rays)]
             for l in self.lines:
                 scene.addItem(l)
         if self.text is None:
@@ -46,23 +48,26 @@ class CrossPoint(object):
         self.min_y = min_y
         self.max_x = max_x
         self.max_y = max_y
-        for i,l in enumerate(self.lines):
-            points = LineCalc(self.x, self.y, np.deg2rad(self.rot) + np.deg2rad(i*180/self.rays) ).endpoints(min_x, min_y, max_x, max_y)
-            #print(points)
+        for i, l in enumerate(self.lines):
+            points = LineCalc(self.x, self.y, np.deg2rad(self.rot) + np.deg2rad(i * 180 / self.rays)).endpoints(min_x,
+                                                                                                                min_y,
+                                                                                                                max_x,
+                                                                                                                max_y)
+            # print(points)
             if points:
                 l.setLine(points[0][0], points[0][1], points[1][0], points[1][1])
                 p = QPen(self.color, self.thickness, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin);
                 l.setPen(p)
 
         font = QFont("Arial", 75)
-        self.text.setPos(QPointF(self.x , self.y))
+        self.text.setPos(QPointF(self.x, self.y))
         self.text.setPlainText(self.label)
         self.text.setDefaultTextColor(Qt.white)
         self.text.setFont(font)
 
     def update(self, deltat, collides=False):
         if None not in self.lines:
-            self.rot = self.rot + deltat/250.0
+            self.rot = self.rot + deltat / 250.0
             if collides:
                 self.thickness = THICK
             else:

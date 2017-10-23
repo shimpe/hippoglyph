@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def clip(subjectPolygon, clipPolygon):
     def inside(p):
         return (cp2[0] - cp1[0]) * (p[1] - cp1[1]) > (cp2[1] - cp1[1]) * (p[0] - cp1[0])
@@ -34,20 +35,21 @@ def clip(subjectPolygon, clipPolygon):
             cp1 = cp2
     return (outputList)
 
+
 class LineCalc(object):
     def __init__(self, x, y, angle_in_radians):
         self.x0 = x
         self.y0 = y
         self.angle_in_radians = angle_in_radians
 
-        #print(self.angle_in_radians)
+        # print(self.angle_in_radians)
         self.a = np.tan(self.angle_in_radians)
-        #print(self.a)
-        self.b = y - self.a*x
+        # print(self.a)
+        self.b = y - self.a * x
 
     def endpoints(self, minx, miny, maxx, maxy):
         # y = ax + b
-        line = [ (minx, self.a*minx + self.b), (maxx, self.a*maxx + self.b)]
-        cliparea = [ (minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy) ]
+        line = [(minx, self.a * minx + self.b), (maxx, self.a * maxx + self.b)]
+        cliparea = [(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)]
         clippedline = clip(line, cliparea)
         return clippedline[0:2]

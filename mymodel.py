@@ -1,12 +1,13 @@
 from crosspoint import CrossPoint
-from trigger import Trigger
 from myimage import MyImage
+from trigger import Trigger
+
 
 class MyModel(object):
     def __init__(self):
         self.model_elements = {
-            'crosspoints' : [],
-            'triggers' : []
+            'crosspoints': [],
+            'triggers': []
         }
         self.total_time = 0
         self.time_left = 0
@@ -43,4 +44,4 @@ class MyModel(object):
             if self.camera_image is not None:
                 self.camera_image.remove_from_scene(scene)
             self.camera_image = MyImage(camera_image)
-            self.camera_image.add_to_scene(scene, -500, -500, 500*2, 500*2)
+            self.camera_image.add_to_scene(scene, -500, -500, 500 * 2, 500 * 2)

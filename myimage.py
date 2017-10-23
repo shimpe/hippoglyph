@@ -1,6 +1,7 @@
 from PyQt5 import QtGui
-import copy
+
 from cv2qimage import Cv2QImage
+
 
 class MyImage(object):
     def __init__(self, image):

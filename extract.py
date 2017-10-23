@@ -1,9 +1,10 @@
+import hunspell
 import pickle
 
 import cv2
 import numpy as np
 from keras.models import model_from_yaml
-import hunspell
+
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -96,7 +97,7 @@ def unwarp(image):
     height = warped.shape[0]
     width = warped.shape[1]
     # print ("width: {0}, height: {1}".format(width, height))
-    xmargin =10
+    xmargin = 10
     ymargin = 10
     crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
     warped_copy = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY);
@@ -242,8 +243,10 @@ def find_contours(image):
                 cnts.append((cy, cx, c))
     return cnts
 
+
 def dist(x1, y1, x2, y2):
-    return np.sqrt((x2-x1)**2 + (y2-y1)**2)
+    return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     result = []
@@ -265,7 +268,7 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
             prevX = x
             prevY = y
 
-        if distance > w*3:
+        if distance > w * 3:
             new_word = True
 
         cropped_letter = unwarped_image[y:y + h, x:x + w]
@@ -283,7 +286,7 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
 
         # th3_blur = cv2.GaussianBlur(255-th3, (5, 5), 0)
         th3_inv_blur = 255 - bordered
-        #cv2.imshow("{0}".format(i + 1), th3_inv_blur)
+        # cv2.imshow("{0}".format(i + 1), th3_inv_blur)
         # cv2.waitKey(0)
         if new_word:
             result.append(None)
@@ -313,7 +316,7 @@ def load_model(bin_dir):
 
 
 def predict(model, mapping, img):
-    #print(img.shape)
+    # print(img.shape)
     x = img.reshape(1, 28, 28, 1)
 
     # Convert type to float32
@@ -329,8 +332,9 @@ def predict(model, mapping, img):
     response = chr(mapping[(int(np.argmax(out, axis=1)[0]))])
     return response
 
+
 def cleanup_word(word, use_spellcheck=True):
-    word = word.replace("0","O").lower()
+    word = word.replace("0", "O").lower()
     if use_spellcheck:
         hobj = hunspell.HunSpell('/usr/share/hunspell/nl_NL.dic', '/usr/share/hunspell/nl_NL.aff')
         if hobj.spell(word):
@@ -339,7 +343,7 @@ def cleanup_word(word, use_spellcheck=True):
         else:
             suggestions = hobj.suggest(word)
             if suggestions:
-                print(word, " cleaned up to: ",suggestions[0]," from possible: ", suggestions)
+                print(word, " cleaned up to: ", suggestions[0], " from possible: ", suggestions)
                 return suggestions[0].lower()
             else:
                 print("unrecognized word: ", word)
@@ -347,6 +351,7 @@ def cleanup_word(word, use_spellcheck=True):
     else:
         print(word)
         return word
+
 
 def main():
     bindir = "/home/shimpe/development/python/ocr/EMNIST/bin"

@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
-	<title>Handwritten Digit Recognition using Convolutional Neural Networks</title>
-  <title>@rcooper // github @coopss </title>
-	<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+    <meta charset="UTF-8">
+    <title>Handwritten Digit Recognition using Convolutional Neural Networks</title>
+    <title>@rcooper // github @coopss </title>
+    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
 </head>
 
 <body>
-		<h1>Alphanumeric Character Recognition using a 2-D Convolutional Neural Network</h1>
+<h1>Alphanumeric Character Recognition using a 2-D Convolutional Neural Network</h1>
 
-		<div class="centered">
-			<canvas id="canvas" width="280" height="280"></canvas>
-		</div>
+<div class="centered">
+    <canvas id="canvas" width="280" height="280"></canvas>
+</div>
 
-		<div class="centered">
-			<input type="button" class="predict_button" value="Predict" style="">
-			<input type="button" id="clear_button" value="Clear" style="">
-		</div>
+<div class="centered">
+    <input type="button" class="predict_button" value="Predict" style="">
+    <input type="button" id="clear_button" value="Clear" style="">
+</div>
 
-		<div class="centered">
-			<h1 id="result"></h1>
-		</div>
-  		<script src="{{url_for('static',filename='jquery-3.2.0.min.js')}}"></script>
-	    <script src="{{url_for('static',filename='index.js')}}"></script>
-	    <script type="text/javascript">
+<div class="centered">
+    <h1 id="result"></h1>
+</div>
+<script src="{{url_for('static',filename='jquery-3.2.0.min.js')}}"></script>
+<script src="{{url_for('static',filename='index.js')}}"></script>
+<script type="text/javascript">
 	   		$(".predict_button").click(function(){
 	   			$('#result').text('  Predicting...');
 	   			var $SCRIPT_ROOT = {{request.script_root|tojson|safe}};
@@ -39,6 +39,7 @@
 	   				}
 	   			});
 	   		});
-	   </script>
+
+</script>
 </body>
 </html>

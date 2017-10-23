@@ -1,11 +1,14 @@
-from ui_mainwindow import Ui_MainWindow
-from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
-from PyQt5.QtGui import QColor
+import pickle
+
 from PyQt5.QtCore import Qt, QTimer
-from mymodel import MyModel
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
+
 from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT
 from extract import load_model, unwarp, find_letters, cutout_letters, cleanup_word, predict
-import pickle
+from mymodel import MyModel
+from ui_mainwindow import Ui_MainWindow
+
 
 class MyCanvas(object):
     def __init__(self, camera):

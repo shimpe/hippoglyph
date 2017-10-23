@@ -1,5 +1,7 @@
-import cv2
 import contextlib
+
+import cv2
+
 
 @contextlib.contextmanager
 def CameraResource(camId):
@@ -31,4 +33,3 @@ def CameraResource(camId):
     yield camera
     print("FINI!")
     camera.release()
-

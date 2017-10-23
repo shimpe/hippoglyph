@@ -1,5 +1,6 @@
 # Mute tensorflow debugging information on console
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from flask import Flask, request, render_template
@@ -12,6 +13,7 @@ import base64
 import pickle
 
 app = Flask(__name__)
+
 
 def load_model(bin_dir):
     ''' Load model from .yaml and the weights from .h5
@@ -33,13 +35,15 @@ def load_model(bin_dir):
     model.load_weights('%s/model.h5' % bin_dir)
     return model
 
+
 @app.route("/")
 def index():
     ''' Render index for user connecting to /
     '''
     return render_template('index.html')
 
-@app.route('/predict/', methods=['GET','POST'])
+
+@app.route('/predict/', methods=['GET', 'POST'])
 def predict():
     ''' Called when user presses the predict button.
         Processes the canvas and handles the image.
@@ -60,10 +64,11 @@ def predict():
             if z_flag == False:
                 x = np.delete(x, _len - index, 0)
         return x
+
     def parseImage(imgData):
         # parse canvas bytes and save as output.png
         imgstr = re.search(b'base64,(.*)', imgData).group(1)
-        with open('output.png','wb') as output:
+        with open('output.png', 'wb') as output:
             output.write(base64.decodebytes(imgstr))
 
     # get data from drawing canvas and save as image
@@ -83,10 +88,10 @@ def predict():
 
     # Visualize new array
     imsave('resized.png', x)
-    x = imresize(x,(28,28))
+    x = imresize(x, (28, 28))
 
     # reshape image data for use in neural network
-    x = x.reshape(1,28,28,1)
+    x = x.reshape(1, 28, 28, 1)
 
     # Convert type to float32
     x = x.astype('float32')
@@ -104,8 +109,10 @@ def predict():
 
 if __name__ = '__main__':
     # Parse optional arguments
-    parser = argparse.ArgumentParser(description='A webapp for testing models generated from training.py on the EMNIST dataset')
-    parser.add_argument('--bin', type=str, default='bin', help='Directory to the bin containing the model yaml and model h5 files')
+    parser = argparse.ArgumentParser(
+        description='A webapp for testing models generated from training.py on the EMNIST dataset')
+    parser.add_argument('--bin', type=str, default='bin',
+                        help='Directory to the bin containing the model yaml and model h5 files')
     parser.add_argument('--host', type=str, default='0.0.0.0', help='The host to run the flask server on')
     parser.add_argument('--port', type=int, default=5000, help='The port to run the flask server on')
     args = parser.parse_args()
