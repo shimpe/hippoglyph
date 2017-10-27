@@ -73,6 +73,7 @@ def four_point_transform(image, pts):
 
 def unwarp(image):
     img_scale = cv2.resize(image, None, fx=1 / 3.0, fy=1 / 3.0, interpolation=cv2.INTER_CUBIC)
+    #img_scale = image
     img = cv2.cvtColor(img_scale, cv2.COLOR_BGR2GRAY);
     gray = cv2.bilateralFilter(img, 11, 21, 21)
     edged = cv2.Canny(gray, 0, 70)
@@ -96,12 +97,13 @@ def unwarp(image):
     warped = four_point_transform(img_scale, screenCnt.reshape(4, 2))
     height = warped.shape[0]
     width = warped.shape[1]
-    # print ("width: {0}, height: {1}".format(width, height))
+    print ("width: {0}, height: {1}".format(width, height))
     xmargin = 10
     ymargin = 10
     crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
-    warped_copy = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY);
-    return warped_copy
+    unwarped_copy = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY);
+    #cv2.imshow("unwarped", warped_copy)
+    return unwarped_copy
 
 
 # Malisiewicz et al.
@@ -195,7 +197,7 @@ def remove_doubles_and_overlaps(image, letters):
     # print(len(numpy_letters))
     remove_idx = set([])
     for i in range(len(numpy_letters)):
-        if rect_area(numpy_letters[i]) < 100:
+        if rect_area(numpy_letters[i]) < 50:
             remove_idx.add(i)
         else:
             for j in range(len(numpy_letters)):
@@ -247,12 +249,26 @@ def find_contours(image):
 def dist(x1, y1, x2, y2):
     return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
+def debug_display(title, list_of_images):
+    if not list_of_images:
+        return
+    l = len(list_of_images)
+    cols = int(np.ceil(np.sqrt(l)))
+    rows = int(np.ceil(l / cols))
+    height, width = list_of_images[0].shape
+    total_image = np.zeros((height*cols,width*rows))
+    counter = 0
+    for c in range(cols):
+        for r in range(rows):
+            if counter < l:
+                total_image[c*height : (c + 1)*height, r*width : (r + 1)*width] = list_of_images[counter]
+                counter += 1
+    cv2.imshow(title, total_image)
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     result = []
     prevX = None
     prevY = None
-    distance = 0
     for i, l in enumerate(sorted(letters, key=lambda x: (int(x[1] / 100), x[0]))):
         new_word = False
         x = l[0]
@@ -272,25 +288,48 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
             new_word = True
 
         cropped_letter = unwarped_image[y:y + h, x:x + w]
-        scaled_cropped_letter = cv2.resize(cropped_letter, None, fx=(desired_width - 2 * xmargin) / w,
-                                           fy=(desired_height - 2 * ymargin) / h,
-                                           interpolation=cv2.INTER_CUBIC)
-        blur = cv2.GaussianBlur(scaled_cropped_letter, (5, 5), 0)
+        maxdim = max(h,w)
+        if h > w:
+            extra_height = 0
+            extra_width = int((h - w)/2)
+        else:
+            extra_height = int((w - h)/2)
+            extra_width = 0
+
+        blur = cv2.GaussianBlur(cropped_letter, (3, 3), sigmaX=1, sigmaY=1)
         ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
+        padded_cropped_letter = cv2.copyMakeBorder(th3, top=extra_height, bottom=extra_height,
+                                                   left=extra_width, right = extra_width,
+                                                   borderType=cv2.BORDER_CONSTANT, value=[255,255,255])
+        current_width = padded_cropped_letter.shape[1]
+        current_height = padded_cropped_letter.shape[0]
+        #cv2.imshow("{0}".format(i + 1), padded_cropped_letter)
+        scaled_cropped_letter = cv2.resize(padded_cropped_letter, None, fx=(desired_width - 2 * xmargin) / current_width,
+                                           fy=(desired_height - 2 * ymargin) / current_height,
+                                           interpolation=cv2.INTER_LINEAR)
+
         if (xmargin > 0) or (ymargin > 0):
-            bordered = cv2.copyMakeBorder(th3, top=ymargin, bottom=ymargin, left=xmargin, right=xmargin,
-                                          borderType=cv2.BORDER_CONSTANT, value=[255, 255, 255])
+            bordered = cv2.copyMakeBorder(scaled_cropped_letter, top=ymargin, bottom=ymargin,
+                                          left=xmargin, right=xmargin,
+                                          borderType=cv2.BORDER_CONSTANT,
+                                          value=[255, 255, 255])
         else:
-            bordered = th3
+            bordered = scaled_cropped_letter
 
         # th3_blur = cv2.GaussianBlur(255-th3, (5, 5), 0)
         th3_inv_blur = 255 - bordered
-        # cv2.imshow("{0}".format(i + 1), th3_inv_blur)
+        blur_th3 = th3_inv_blur
+        #cv2.imshow("{0}".format(i + 1), th3_inv_blur)
         # cv2.waitKey(0)
         if new_word:
             result.append(None)
-        result.append(th3_inv_blur.copy())
+        #print("MAX: ", np.amax(blur_th3), " MIN: ", np.amin(blur_th3), " MEDIAN: ", np.median(blur_th3))
+        result.append([blur_th3.copy(), (x + w/2, y + h/2)])
+
+    #visualization = [r[0] for r in result if r is not None]
+    #debug_display("found letters", visualization)
+
     return result
 
 
@@ -366,18 +405,31 @@ def main():
 
     words = []
     current_word = ""
+    wordX = 0
+    wordY = 0
+    wordLen = 0
     for l in cut_letters:
         if l is None:
-            words.append(cleanup_word(current_word))
+            words.append([cleanup_word(current_word), (wordX, wordY)])
             current_word = ""
+            wordX = 0
+            wordY = 0
+            wordLen = 0
         else:
-            current_word += predict(model, mapping, l)
+            letter, pos = l[0], l[1]
+            wordX += pos[0]
+            wordY += pos[1]
+            wordLen += 1
+            current_word += predict(model, mapping, letter)
     if current_word:
-        words.append(cleanup_word(current_word))
+        avgX = wordX/wordLen if wordLen != 0 else 0
+        avgY = wordY/wordLen if wordLen != 0 else 0
+        words.append((cleanup_word(current_word), (avgX, avgY)))
 
-    print(" ".join(words))
-    cv2.imshow("letters", letter_image)
+    print(" ".join([w[0] for w in words]))
+    print(" ".join([str(pos[1]) for pos in words]))
 
+    #cv2.imshow("letters", letter_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

@@ -4,10 +4,12 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
 
-from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT
-from extract import load_model, unwarp, find_letters, cutout_letters, cleanup_word, predict
+from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
+from extract import load_model, unwarp, find_letters, cutout_letters, cleanup_word, predict, debug_display
 from mymodel import MyModel
+from colorgenerator import ColorGenerator
 from ui_mainwindow import Ui_MainWindow
+from vectortween.Mapping import Mapping
 
 
 class MyCanvas(object):
@@ -23,6 +25,9 @@ class MyCanvas(object):
         self.camera = camera
         self.liveinput_timer = None
         self.anim_timer = None
+        self.counter = 0
+        self.colorgenerator = ColorGenerator()
+        self.words = []
 
         self.bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
         self.model = load_model(self.bindir)
@@ -63,23 +68,56 @@ class MyCanvas(object):
     def update_liveinput(self):
         ok, image = self.camera.take_input()
         if ok:
+            self.datamodel.set_camera_image(self.camera_scene, image)
+        self.counter += 1
+        if ok and (self.counter % READ_INTERVAL == 0):
+            self.counter = 0
             unwarped_image = unwarp(image)
-            if unwarped_image is not None:
+            if unwarped_image is None:
+                print("SKIP DETECTION")
+            elif unwarped_image is not None:
+                #import cv2
+                #cv2.imshow("unwarped image", unwarped_image)
                 letters, letter_image = find_letters(unwarped_image)
                 cut_letters = cutout_letters(unwarped_image, letters)
-                import cv2
-                cv2.imshow("letter_image", letter_image)
-                self.datamodel.set_camera_image(self.camera_scene, image)
+                #import cv2
+                #cv2.imshow("letter_image", letter_image)
                 self.words = []
                 current_word = ""
+                avgX = 0
+                avgY = 0
+                wordLength = 0
                 for l in cut_letters:
                     if l is None:
-                        self.words.append(cleanup_word(current_word))
+                        avgX = avgX / wordLength if wordLength != 0 else 0
+                        avgY = avgY / wordLength if wordLength != 0 else 0
+                        self.words.append([cleanup_word(current_word), (avgX, avgY)])
                         current_word = ""
+                        avgX = 0
+                        avgY = 0
+                        wordLength = 0
                     else:
-                        current_word += predict(self.model, self.mapping, l)
+                        letter, pos = l
+                        current_word += predict(self.model, self.mapping, letter)
+                        avgX += pos[0]
+                        avgY += pos[1]
+                        wordLength += 1
                 if current_word:
-                    self.words.append(cleanup_word(current_word))
+                    avgX = avgX / wordLength if wordLength != 0 else 0
+                    avgY = avgY / wordLength if wordLength != 0 else 0
+                    self.words.append([cleanup_word(current_word), (avgX, avgY)])
+
+            no_of_col = len(self.words)
+            colors = self.colorgenerator.get_colors(no_of_col)
+            self.datamodel.clear_crosspoints()
+            for i, w in enumerate(self.words):
+                imgw = unwarped_image.shape[1]
+                mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, CAMWIDTH)
+                imgh = unwarped_image.shape[0]
+                mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, CAMHEIGHT)
+                if w is not None:
+                    self.add_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
+            self.display_model()
 
         if self.liveinput_timer is not None:
             self.datamodel.update_time_left(INPUT_INTERVAL, self.liveinput_timer.remainingTime())

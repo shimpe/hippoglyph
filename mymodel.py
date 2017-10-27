@@ -13,6 +13,12 @@ class MyModel(object):
         self.time_left = 0
         self.camera_image = None
 
+    def clear_crosspoints(self):
+        self.model_elements['crosspoints'] = []
+
+    def clear_triggers(self):
+        self.model_elements['triggers'] = []
+
     def add_crosspoint(self, x, y, label, rays, color):
         self.model_elements['crosspoints'].append(CrossPoint(x, y, label, rays, color))
 
