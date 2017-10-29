@@ -71,41 +71,7 @@ class MyCanvas(object):
             self.datamodel.set_camera_image(self.camera_scene, image)
         self.counter += 1
         if ok and (self.counter % READ_INTERVAL == 0):
-            self.counter = 0
-            unwarped_image = unwarp(image)
-            if unwarped_image is None:
-                print("SKIP DETECTION")
-            elif unwarped_image is not None:
-                #import cv2
-                #cv2.imshow("unwarped image", unwarped_image)
-                letters, letter_image = find_letters(unwarped_image)
-                cut_letters = cutout_letters(unwarped_image, letters)
-                #import cv2
-                #cv2.imshow("letter_image", letter_image)
-                self.words = []
-                current_word = ""
-                avgX = 0
-                avgY = 0
-                wordLength = 0
-                for l in cut_letters:
-                    if l is None:
-                        avgX = avgX / wordLength if wordLength != 0 else 0
-                        avgY = avgY / wordLength if wordLength != 0 else 0
-                        self.words.append([cleanup_word(current_word), (avgX, avgY)])
-                        current_word = ""
-                        avgX = 0
-                        avgY = 0
-                        wordLength = 0
-                    else:
-                        letter, pos = l
-                        current_word += predict(self.model, self.mapping, letter)
-                        avgX += pos[0]
-                        avgY += pos[1]
-                        wordLength += 1
-                if current_word:
-                    avgX = avgX / wordLength if wordLength != 0 else 0
-                    avgY = avgY / wordLength if wordLength != 0 else 0
-                    self.words.append([cleanup_word(current_word), (avgX, avgY)])
+            unwarped_image = self.image_to_words(image)
 
             no_of_col = len(self.words)
             colors = self.colorgenerator.get_colors(no_of_col)
@@ -125,6 +91,44 @@ class MyCanvas(object):
         camBounds.setWidth(camBounds.width() * 1.01)
         camBounds.setHeight(camBounds.height() * 1.01)
         self.ui.cameraView.fitInView(camBounds, Qt.KeepAspectRatio)
+
+    def image_to_words(self, image):
+        self.counter = 0
+        unwarped_image = unwarp(image)
+        if unwarped_image is None:
+            print("SKIP DETECTION")
+        elif unwarped_image is not None:
+            # import cv2
+            # cv2.imshow("unwarped image", unwarped_image)
+            letters, letter_image = find_letters(unwarped_image)
+            cut_letters = cutout_letters(unwarped_image, letters)
+            # import cv2
+            # cv2.imshow("letter_image", letter_image)
+            self.words = []
+            current_word = ""
+            avgX = 0
+            avgY = 0
+            wordLength = 0
+            for l in cut_letters:
+                if l is None:
+                    avgX = avgX / wordLength if wordLength != 0 else 0
+                    avgY = avgY / wordLength if wordLength != 0 else 0
+                    self.words.append([cleanup_word(current_word), (avgX, avgY)])
+                    current_word = ""
+                    avgX = 0
+                    avgY = 0
+                    wordLength = 0
+                else:
+                    letter, pos = l
+                    current_word += predict(self.model, self.mapping, letter)
+                    avgX += pos[0]
+                    avgY += pos[1]
+                    wordLength += 1
+            if current_word:
+                avgX = avgX / wordLength if wordLength != 0 else 0
+                avgY = avgY / wordLength if wordLength != 0 else 0
+                self.words.append([cleanup_word(current_word), (avgX, avgY)])
+        return unwarped_image
 
     def start_animation_timer(self):
         self.anim_timer = QTimer()
