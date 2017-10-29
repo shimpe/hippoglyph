@@ -4,7 +4,7 @@ import pickle
 import cv2
 import numpy as np
 from keras.models import model_from_yaml
-
+from skimage.filters import threshold_adaptive
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -101,9 +101,9 @@ def unwarp(image):
     xmargin = 10
     ymargin = 10
     crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
-    unwarped_copy = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY);
+
     #cv2.imshow("unwarped", warped_copy)
-    return unwarped_copy
+    return crop_img
 
 
 # Malisiewicz et al.
@@ -230,7 +230,12 @@ def contours_to_boundingboxes(cnts):
 
 
 def find_contours(image):
-    gray = cv2.bilateralFilter(image, 5, 51, 51)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY);
+    # V = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))[2]
+    # thresh = threshold_adaptive(V, 101, offset=15).astype("uint8") * 255
+    # thresh = cv2.bitwise_not(thresh)
+    # gray = thresh
+    gray = cv2.bilateralFilter(gray, 5, 51, 51)
     edged = cv2.Canny(gray, 0, 100)
     image3, contours3, hierarchy3 = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = []
@@ -266,6 +271,8 @@ def debug_display(title, list_of_images):
     cv2.imshow(title, total_image)
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
+    unwarped_image = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2GRAY);
+    cv2.imshow("unwarped", unwarped_image)
     result = []
     prevX = None
     prevY = None
@@ -296,8 +303,11 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
             extra_height = int((w - h)/2)
             extra_width = 0
 
-        blur = cv2.GaussianBlur(cropped_letter, (3, 3), sigmaX=1, sigmaY=1)
+        #blur = cv2.GaussianBlur(cropped_letter, (3, 3), sigmaX=1, sigmaY=1)
+        blur = cv2.GaussianBlur(cropped_letter, (5, 5), 0)
         ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        #th3 = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
+        #                            cv2.THRESH_BINARY, 11, 2)
 
         padded_cropped_letter = cv2.copyMakeBorder(th3, top=extra_height, bottom=extra_height,
                                                    left=extra_width, right = extra_width,
@@ -327,8 +337,8 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
         #print("MAX: ", np.amax(blur_th3), " MIN: ", np.amin(blur_th3), " MEDIAN: ", np.median(blur_th3))
         result.append([blur_th3.copy(), (x + w/2, y + h/2)])
 
-    #visualization = [r[0] for r in result if r is not None]
-    #debug_display("found letters", visualization)
+    visualization = [r[0] for r in result if r is not None]
+    debug_display("found letters", visualization)
 
     return result
 
