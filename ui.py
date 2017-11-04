@@ -1,17 +1,13 @@
-import random
 import sys
-
-from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
 
 from constants import CAMWIDTH, CAMHEIGHT
 from mycamera import CameraResource
 from mycanvas import MyCanvas
 
-
 def main():
     app = QApplication(sys.argv)
-    with CameraResource(1) as camera:
+    with CameraResource(1, load_diagnostics=True, save_diagnostics=False) as camera:
         camera.set_image_size(CAMWIDTH, CAMHEIGHT)
         canvas = MyCanvas(camera)
         canvas.show()
