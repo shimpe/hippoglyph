@@ -42,7 +42,7 @@ class Trigger(object):
         radgrad.setColorAt(1, QColor(255, 255, 255, 0));
         self.circle.setBrush(QBrush(radgrad))
 
-    def update(self, deltat):
+    def update(self, udp_client, deltat):
         if self.circle is not None:
             self.time = self.time + 0.3
             self.scale = self.scale + np.sin(2 * np.pi * 1 / FS * self.time / 250)

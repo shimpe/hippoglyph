@@ -4,7 +4,7 @@ from trigger import Trigger
 
 
 class MyModel(object):
-    def __init__(self):
+    def __init__(self, udp_client):
         self.model_elements = {
             'crosspoints': [],
             'triggers': []
@@ -12,6 +12,7 @@ class MyModel(object):
         self.total_time = 0
         self.time_left = 0
         self.camera_image = None
+        self.udp_client = udp_client
 
     def clear_crosspoints(self):
         self.model_elements['crosspoints'] = []
@@ -36,10 +37,10 @@ class MyModel(object):
             for t in self.model_elements['triggers']:
                 if el.collidesWithItem(t):
                     collides = True
-            el.update(deltat, collides)
+            el.update(self.udp_client, deltat, collides)
 
         for el in self.model_elements['triggers']:
-            el.update(deltat)
+            el.update(self.udp_client, deltat)
 
     def update_time_left(self, total_time, time_left):
         self.total_time = total_time

@@ -26,6 +26,7 @@ class CrossPoint(object):
         self.lines = [None for i in range(self.rays)]
         self.thickness = THIN
         self.walk = False
+        self.sent = False
 
     def remove_from_scene(self):
         if self.scene is not None:
@@ -65,13 +66,20 @@ class CrossPoint(object):
         self.text.setDefaultTextColor(Qt.white)
         self.text.setFont(font)
 
-    def update(self, deltat, collides=False):
+    def update(self, udp_client, deltat, collides=False):
         if None not in self.lines:
             self.rot = self.rot + deltat / 250.0
             if collides:
                 self.thickness = THICK
+                if not self.sent and udp_client is not None:
+                    msg = "/{0}".format(self.label)
+                    print("Sending: '{0}'".format(msg))
+                    udp_client.send_message(msg, 0)
+                    self.sent = True
             else:
                 self.thickness = THIN
+                self.sent = False
+
             if self.walk:
                 target = 1
                 beta = 1.0 / target
