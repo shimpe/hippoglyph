@@ -1,6 +1,8 @@
 from crosspoint import CrossPoint
 from myimage import MyImage
 from trigger import Trigger
+from constants import MERGEDISTANCE
+from utils import distance
 
 
 class MyModel(object):
@@ -23,13 +25,33 @@ class MyModel(object):
     def add_crosspoint(self, x, y, label, rays, color):
         self.model_elements['crosspoints'].append(CrossPoint(x, y, label, rays, color))
 
+    def update_crosspoint(self, x, y, label, rays, color):
+        for el in self.model_elements['crosspoints']:
+            if distance(x, y, el.x, el.y) < MERGEDISTANCE:
+                el.set_visited(True)
+                return
+        self.add_crosspoint(x, y, label, rays, color)
+
     def add_trigger(self, x, y, color):
         self.model_elements['triggers'].append(Trigger(x, y, color))
+
+    def update_trigger(self, x, y, color):
+        for el in self.model_elements['triggers']:
+            if distance(x, y, el.x, el.y) < MERGEDISTANCE:
+                el.set_visited(True)
+                return
+        self.add_trigger(x, y, color)
 
     def add_to_scene(self, scene, minx, miny, maxx, maxy):
         for group in self.model_elements:
             for el in self.model_elements[group]:
-                el.add_to_scene(scene, minx, miny, maxx, maxy)
+                if not el.added:
+                    el.add_to_scene(scene, minx, miny, maxx, maxy)
+
+    def prepare_update(self):
+        for group in self.model_elements:
+            for el in self.model_elements[group]:
+                el.set_visited(False)
 
     def update(self, deltat):
         for el in self.model_elements['crosspoints']:

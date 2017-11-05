@@ -43,7 +43,7 @@ class MyCanvas(object):
         self.mapping = pickle.load(open('%s/mapping.p' % self.bindir, 'rb'))
 
     def display_model(self):
-        self.scene.clear()
+        #self.scene.clear()
         self.datamodel.add_to_scene(self.scene, 0, 0, CAMWIDTH, CAMHEIGHT)
         self.datamodel.set_camera_image(self.camera_scene, self.camera.image)
 
@@ -92,10 +92,7 @@ class MyCanvas(object):
 
                 no_of_col = len(self.words)
                 colors = self.colorgenerator.get_colors(no_of_col)
-                self.datamodel.clear_crosspoints()
-                self.datamodel.clear_triggers()
-                #self.datamodel.prepare_update_crosspoints()
-                #self.datamodel.prepare_update_trigger()
+                self.datamodel.prepare_update()
                 for i, w in enumerate(self.words):
                     imgw = unwarped_image.shape[1]
                     mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, CAMWIDTH)
@@ -103,12 +100,11 @@ class MyCanvas(object):
                     mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, CAMHEIGHT)
                     if w is not None:
                         if w[0] == "t":
-                            self.add_trigger(mapped_x, mapped_y, colors[i])
+                            self.update_trigger(mapped_x, mapped_y, colors[i])
                         else:
                             print("{0}".format(w))
-                            self.add_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
-                #self.datamodel.finish_update_crosspoints()
-                #self.datamodel.finish_update_triggers()
+                            self.update_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
+                self.datamodel.finish_update()
                 self.display_model()
 
             if self.liveinput_timer is not None:

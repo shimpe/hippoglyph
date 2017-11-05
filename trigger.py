@@ -20,6 +20,12 @@ class Trigger(object):
         self.max_x = None
         self.max_y = None
 
+        self.visited = True
+        self.added = False
+
+    def set_visited(self, val):
+        self.visited = val
+
     def remove_from_scene(self):
         if self.scene is not None:
             self.scene.remove(self.circle)
@@ -41,6 +47,7 @@ class Trigger(object):
         radgrad.setColorAt(0, QColor(0, 255, 0, 255));
         radgrad.setColorAt(1, QColor(255, 255, 255, 0));
         self.circle.setBrush(QBrush(radgrad))
+        self.added = True
 
     def update(self, udp_client, deltat):
         if self.circle is not None:

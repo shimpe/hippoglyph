@@ -28,6 +28,12 @@ class CrossPoint(object):
         self.walk = False
         self.sent = False
 
+        self.visited = True
+        self.added = False
+
+    def set_visited(self, val):
+        self.visited = val
+
     def remove_from_scene(self):
         if self.scene is not None:
             for l in self.lines:
@@ -65,6 +71,7 @@ class CrossPoint(object):
         self.text.setPlainText(self.label)
         self.text.setDefaultTextColor(Qt.white)
         self.text.setFont(font)
+        self.added = True
 
     def update(self, udp_client, deltat, collides=False):
         if None not in self.lines:
