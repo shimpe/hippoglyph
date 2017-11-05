@@ -104,7 +104,7 @@ class MyCanvas(object):
                         else:
                             print("{0}".format(w))
                             self.update_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
-                self.datamodel.finish_update()
+                #self.datamodel.finish_update()
                 self.display_model()
 
             if self.liveinput_timer is not None:
