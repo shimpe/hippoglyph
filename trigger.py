@@ -11,7 +11,7 @@ class Trigger(object):
         self.x = x
         self.y = y
         self.time = 0
-        self.scale = 50
+        self.scale = 75
         self.color = color
         self.circle = None
         self.scene = None
@@ -52,7 +52,7 @@ class Trigger(object):
     def update(self, udp_client, deltat):
         if self.circle is not None:
             self.time = self.time + 0.3
-            self.scale = self.scale + np.sin(2 * np.pi * 1 / FS * self.time / 250)
+            self.scale = self.scale + 5 * np.sin(2 * np.pi * 1 / FS * self.time / 250)
             self.add_to_scene(self.scene, self.min_x, self.min_y, self.max_x, self.max_y)
 
     def collidesWithItem(self, item):
