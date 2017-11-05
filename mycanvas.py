@@ -92,8 +92,8 @@ class MyCanvas(object):
 
                 no_of_col = len(self.words)
                 colors = self.colorgenerator.get_colors(no_of_col)
-                #self.datamodel.clear_crosspoints()
-                #self.datamodel.clear_triggers()
+                self.datamodel.clear_crosspoints()
+                self.datamodel.clear_triggers()
                 #self.datamodel.prepare_update_crosspoints()
                 #self.datamodel.prepare_update_trigger()
                 for i, w in enumerate(self.words):
@@ -103,10 +103,10 @@ class MyCanvas(object):
                     mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, CAMHEIGHT)
                     if w is not None:
                         if w[0] == "t":
-                            self.update_trigger(mapped_x, mapped_y, colors[i])
+                            self.add_trigger(mapped_x, mapped_y, colors[i])
                         else:
                             print("{0}".format(w))
-                            self.update_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
+                            self.add_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
                 #self.datamodel.finish_update_crosspoints()
                 #self.datamodel.finish_update_triggers()
                 self.display_model()
