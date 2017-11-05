@@ -53,6 +53,14 @@ class MyModel(object):
             for el in self.model_elements[group]:
                 el.set_visited(False)
 
+    def finish_update(self):
+        for key in self.model_elements:
+            for_removal = [el for el in self.model_elements[key] if not el.visited]
+            for_keep = [el for el in self.model_elements[key] if el.visited]
+            for el in for_removal:
+                el.remove_from_scene()
+            self.model_elements[key] = for_keep
+
     def update(self, deltat):
         for el in self.model_elements['crosspoints']:
             collides = False

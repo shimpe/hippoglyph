@@ -43,7 +43,6 @@ class MyCanvas(object):
         self.mapping = pickle.load(open('%s/mapping.p' % self.bindir, 'rb'))
 
     def display_model(self):
-        #self.scene.clear()
         self.datamodel.add_to_scene(self.scene, 0, 0, CAMWIDTH, CAMHEIGHT)
         self.datamodel.set_camera_image(self.camera_scene, self.camera.image)
 
@@ -104,7 +103,7 @@ class MyCanvas(object):
                         else:
                             print("{0}".format(w))
                             self.update_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
-                #self.datamodel.finish_update()
+                self.datamodel.finish_update()
                 self.display_model()
 
             if self.liveinput_timer is not None:
