@@ -272,7 +272,7 @@ def debug_display(title, list_of_images):
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     unwarped_image = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2GRAY);
-    cv2.imshow("unwarped", unwarped_image)
+    #cv2.imshow("unwarped", unwarped_image)
     result = []
     prevX = None
     prevY = None
@@ -392,7 +392,11 @@ def cleanup_word(word, use_spellcheck=True):
         else:
             suggestions = hobj.suggest(word)
             if suggestions:
-                print(word, " cleaned up to: ", suggestions[0], " from possible: ", suggestions)
+                for s in suggestions:
+                    if len(s) == len(word):
+                        print(word, " cleaned up to: ", s, " from possible: ", suggestions)
+                        return s.lower()
+                print(word, " cleaned up to: ", suggestions[0], " from possible ", suggestions)
                 return suggestions[0].lower()
             else:
                 print("unrecognized word: ", word)
@@ -400,7 +404,6 @@ def cleanup_word(word, use_spellcheck=True):
     else:
         print(word)
         return word
-
 
 def main():
     bindir = "/home/shimpe/development/python/ocr/EMNIST/bin"
