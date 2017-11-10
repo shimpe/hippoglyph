@@ -30,6 +30,7 @@ class MyCanvas(object):
         self.colorgenerator = ColorGenerator()
         self.words = []
         self.lock = RLock()
+        self.cam_image_fit_needed = True
         try:
             self.udp_client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
         except Exception as e:
@@ -58,7 +59,9 @@ class MyCanvas(object):
         camBounds.setWidth(camBounds.width() * 1.01)
         camBounds.setHeight(camBounds.height() * 1.01)
         self.ui.graphicsView.fitInView(camBounds, Qt.KeepAspectRatio)
-        self.ui.cameraView.fitInView(camBounds, Qt.KeepAspectRatio)
+        if self.cam_image_fit_needed:
+            self.ui.cameraView.fitInView(camBounds, Qt.KeepAspectRatio)
+            self.cam_image_fit_needed = False
 
     def add_crosspoint(self, x, y, label, rays, color):
         self.datamodel.add_crosspoint(x, y, label, rays, color)
@@ -102,7 +105,7 @@ class MyCanvas(object):
                             self.update_trigger(mapped_x, mapped_y, colors[i])
                         else:
                             print("{0}".format(w))
-                            self.update_crosspoint(mapped_x, mapped_y, w[0], 2, colors[i])
+                            self.update_crosspoint(mapped_x, mapped_y, w[0], 5, colors[i])
                 self.datamodel.finish_update()
                 self.display_model()
 
