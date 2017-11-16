@@ -1,10 +1,10 @@
-import hunspell
 import pickle
+import difflib
 
 import cv2
 import numpy as np
 from keras.models import model_from_yaml
-from skimage.filters import threshold_adaptive
+from globals import GLOBAL_hobj, GLOBAL_fuzzylist
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -382,15 +382,14 @@ def predict(model, mapping, img):
     return response
 
 
-def cleanup_word(word, use_spellcheck=True):
+def cleanup_word(word, use_spellcheck_instead_of_commands_txt=False):
     word = word.replace("0", "O").lower()
-    if use_spellcheck:
-        hobj = hunspell.HunSpell('/usr/share/hunspell/nl_NL.dic', '/usr/share/hunspell/nl_NL.aff')
-        if hobj.spell(word):
+    if use_spellcheck_instead_of_commands_txt:
+        if GLOBAL_hobj.spell(word):
             print(word)
             return word
         else:
-            suggestions = hobj.suggest(word)
+            suggestions = GLOBAL_hobj.suggest(word)
             if suggestions:
                 for s in suggestions:
                     if len(s) == len(word):
@@ -402,8 +401,15 @@ def cleanup_word(word, use_spellcheck=True):
                 print("unrecognized word: ", word)
                 return word
     else:
-        print(word)
-        return word
+        corrected = fuzzy_correct(word, GLOBAL_fuzzylist)
+        print("corrected {0} to {1}".format(word, corrected))
+        return corrected
+
+def fuzzy_correct(word, list_of_possible_words):
+    closematch = difflib.get_close_matches(word, list_of_possible_words)
+    if closematch:
+        return closematch[0]
+    return word
 
 def main():
     bindir = "/home/shimpe/development/python/ocr/EMNIST/bin"

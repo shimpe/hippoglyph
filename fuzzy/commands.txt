@@ -1,0 +1,15 @@
+# define commands which the system should recognize
+sfeer
+bel
+robot
+sopraan
+koor
+drum
+ufo
+noise
+piano
+fluit
+stop
+x
+s
+t
