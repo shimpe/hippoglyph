@@ -1,4 +1,5 @@
 import pickle
+import os
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor
@@ -37,9 +38,7 @@ class MyCanvas(object):
             print("Exception occurred:\n{0}".format(e))
             self.udp_client = None
         self.datamodel = MyModel(self.udp_client)
-
-
-        self.bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
+        self.bindir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "EMNIST", "bin")
         self.model = load_model(self.bindir)
         self.mapping = pickle.load(open('%s/mapping.p' % self.bindir, 'rb'))
 
