@@ -1,9 +1,9 @@
 // yoshimi channel 1: 35. Fantasy, patch: impossible dream 4
-14. Fantasy, patch: glass voices
+//                    14. Fantasy, patch: glass voices
 // yoshimi channel 2: 110. Will Godfrey companion, patch Muffled Bells
-110. Will Godfrey companion, patch Muted Synth
+//                    110. Will Godfrey companion, patch Muted Synth
 //                    100. Mysterious bank, patch UFO invasion
-115. chip bank, patch chips thing
+//                    115. chip bank, patch chips thing
 // yoshimi channel 3: 90. synth bank, patch resonance synth
 (
 s.waitForBoot({
@@ -208,16 +208,16 @@ s.waitForBoot({
 			\chan, 1,
 			\degree, Prout({
 				var sequence = [0];
-				var ranlen = 3.rrand(6);
-				var ranrepeat = 1.rrand(3);
+				var ranlen = 3.rrand(4);
+				var ranrepeat = 1.rrand(2);
 				var octave = (-1).rrand(1);
 				ranlen.do({
 					| i |
-					sequence = sequence ++ (sequence[sequence.size-1] + (1.rrand(3)));
+					sequence = sequence ++ (sequence[sequence.size-1] + (1.rrand(5)));
 				});
 				ranlen.do({
 					| i |
-					sequence = sequence ++ (sequence[sequence.size-1] + ((-1).rrand(-3)));
+					sequence = sequence ++ (sequence[sequence.size-1] + ((-1).rrand(-5)));
 				});
 
 				ranrepeat.do({
@@ -241,7 +241,7 @@ s.waitForBoot({
 					var durs = 1.dup(4);
 					durs = durs.collect({
 						| val |
-						val + (-0.05).rrand(0.05)
+						val + (-0.01).rrand(0.01)
 					});
 					durs = (durs.normalizeSum/(0.5.rrand(2)));
 					durs.do({ | dur |
@@ -265,13 +265,12 @@ s.waitForBoot({
 			\midicmd, \noteOn,
 			\midiout, mo2,
 			\chan, 0,
-			\midinote, Prand((35..64), 20),
-			\dur, Pfunc({0.1.rrand(0.3)}),
-			\amp, Pexprand(0.4,0.6,inf)
+			\midinote, Pbrown(35,64,1,30),
+			\dur, Pfunc({0.1.rrand(0.2)}),
+			\amp, Pexprand(0.9,1.0,inf)
 		);
 		pat.play;
 	}, '/drum', n);
-
 
 	OSCdef(\startNoise).free; // free old OSCdefs that may still be around
 	OSCdef(\startNoise, {
@@ -279,7 +278,7 @@ s.waitForBoot({
 		var pat;
 		("noise " ++ msg[1]).postln;
 		if (notes_per_chan[4] != [], {mo.noteOff(chan:4, note:notes_per_chan[4])}, {});
-				pat = Pbind(
+		pat = Pbind(
 			\type, \midi,
 			\midicmd, \noteOn,
 			\midiout, mo,
@@ -403,20 +402,22 @@ s.waitForBoot({
 s.waitForBoot({
 	var mo2;
 	var pat;
-	// MIDIdef.freeAll;
-	// MIDIClient.free;
-	// MIDIClient.init;
-	// MIDIClient.destinations.postln;
-	// MIDIIn.connectAll;
+	/*
+	MIDIdef.freeAll;
+	MIDIClient.free;
+	MIDIClient.init;
+	MIDIClient.destinations.postln;
+	MIDIIn.connectAll;
+	*/
 	mo2 = MIDIOut.newByName("LinuxSampler", "Port 0").latency_(Server.default.latency);
 	pat = Pbind(
 		\type, \midi,
 		\midicmd, \noteOn,
 		\midiout, mo2,
 		\chan, 0,
-		\midinote, Prand((35..64), 20).trace,
-		\dur, Pfunc({0.05.rrand(0.2)}),
-		\amp, Pexprand(0.8,0.9,inf)
+		\midinote, Pbrown(35,64,1,30),
+		\dur, Pfunc({0.1.rrand(0.2)}),
+		\amp, Pexprand(0.9,1.0,inf)
 	);
 	pat.play;
 });
