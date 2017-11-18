@@ -42,16 +42,16 @@ s.waitForBoot({
 	OSCdef(\startFluit).free; // free old OSCdefs that may still be around
 	OSCdef(\startFluit, {
 		| msg, time, addr, port |
-		("sfeer " ++ msg[1]).postln;
+		("fluit " ++ msg[1]).postln;
 		if (notes_per_chan[0] != [], {mo.noteOff(chan:0, note:notes_per_chan[0])}, {});
 		mo.noteOn(chan:0, note:(10..30).choose, veloc:(80..110).choose);
 	}, '/fluit', n);
 
-	OSCdef(\start8iaho).free;
-	OSCdef(\start8iaho, {
+	OSCdef(\startpiano).free;
+	OSCdef(\startpiano, {
 		| msg, time, addr, port |
 		var pat, pat2;
-		("8iaho " ++ msg[1]).postln;
+		("piano " ++ msg[1]).postln;
 		if (notes_per_chan[1] != [], {mo.noteOff(chan:1, note:notes_per_chan[1])}, {});
 
 		pat = Pbind(
@@ -115,7 +115,7 @@ s.waitForBoot({
 		);
 		pat2.play;
 
-	}, '/8iaho', n);
+	}, '/piano', n);
 
 	OSCdef(\startSfeer).free; // free old OSCdefs that may still be around
 	OSCdef(\startSfeer, {
