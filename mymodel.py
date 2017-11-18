@@ -1,6 +1,6 @@
 from crosspoint import CrossPoint
 from myimage import MyImage
-from trigger import Trigger
+from trigger import GreenTrigger, RedTrigger, YellowTrigger
 from constants import MERGEDISTANCE
 from utils import distance
 
@@ -33,7 +33,7 @@ class MyModel(object):
         self.add_crosspoint(x, y, label, rays, color)
 
     def add_trigger(self, x, y, color):
-        self.model_elements['triggers'].append(Trigger(x, y, color))
+        self.model_elements['triggers'].append(YellowTrigger(x, y, color))
 
     def update_trigger(self, x, y, color):
         for el in self.model_elements['triggers']:
