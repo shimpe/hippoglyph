@@ -2,6 +2,7 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QRadialGradient, QPen
 from PyQt5.QtWidgets import QGraphicsEllipseItem
+from random import uniform, choice
 
 from constants import FS
 
@@ -22,6 +23,9 @@ class Trigger(object):
         self.visited = True
         self.added = False
 
+    def get_collision_info(self):
+        return dict()
+
     def set_visited(self, val):
         self.visited = val
 
@@ -39,8 +43,8 @@ class Trigger(object):
         self.add_to_scene_private(scene, min_x, min_y, max_x, max_y)
         self.added = True
 
-    def update(self, udp_client, deltat):
-        self.update_private(udp_client, deltat)
+    def update(self, udp_client, deltat, collisionInfo):
+        self.update_private(udp_client, deltat, collisionInfo)
 
     def collidesWithItem(self, item):
         return self.collidesWithItem_private(item)
@@ -76,7 +80,7 @@ class GreenTrigger(Trigger):
             return True
         return False
 
-    def update_private(self, udp_client, deltat):
+    def update_private(self, udp_client, deltat, collisionInfo):
         if self.circle is not None:
             self.time = self.time + 0.3
             self.scale = self.scale + 5 * np.sin(2 * np.pi * 1 / FS * self.time / 250)
@@ -99,12 +103,16 @@ class RedTrigger(Trigger):
         radgrad.setColorAt(1, QColor(255, 255, 255, 0));
         self.circle.setBrush(QBrush(radgrad))
 
+    def get_collision_info(self):
+        spread = 0.8
+        return { 'multiply_speed' :  (1 - spread/2) + uniform(0, spread) }
+
     def collidesWithItem_private(self, item):
         if self.circle.collidesWithItem(item):
             return True
         return False
 
-    def update_private(self, udp_client, deltat):
+    def update_private(self, udp_client, deltat, collisionInfo):
         if self.circle is not None:
             self.time = self.time + 0.3
             self.scale = self.scale + 5 * np.sin(2 * np.pi * 1 / FS * self.time / 250)
@@ -127,12 +135,15 @@ class YellowTrigger(Trigger):
         radgrad.setColorAt(1, QColor(255, 255, 255, 0));
         self.circle.setBrush(QBrush(radgrad))
 
+    def get_collision_info(self):
+        return { 'change_rays' : choice([-1, -2, 2, 1])}
+
     def collidesWithItem_private(self, item):
         if self.circle.collidesWithItem(item):
             return True
         return False
 
-    def update_private(self, udp_client, deltat):
+    def update_private(self, udp_client, deltat, collisionInfo):
         if self.circle is not None:
             self.time = self.time + 0.3
             self.scale = self.scale + 5 * np.sin(2 * np.pi * 1 / FS * self.time / 250)

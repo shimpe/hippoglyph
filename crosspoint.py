@@ -27,9 +27,11 @@ class CrossPoint(object):
         self.thickness = THIN
         self.walk = False
         self.sent = False
+        self.speed = 1.0
 
         self.visited = True
         self.added = False
+        self.collision_in_progress = False
 
     def set_visited(self, val):
         self.visited = val
@@ -37,8 +39,8 @@ class CrossPoint(object):
     def remove_from_scene(self):
         if self.scene is not None:
             for l in self.lines:
-                self.scene.remove_item(l)
-            self.scene.remove_item(self.text)
+                self.scene.removeItem(l)
+            self.scene.removeItem(self.text)
             self.lines = [None for i in range(self.rays)]
             self.text = None
 
@@ -73,9 +75,31 @@ class CrossPoint(object):
         self.text.setFont(font)
         self.added = True
 
-    def update(self, udp_client, deltat, collides=False):
+    def update(self, udp_client, deltat, collides=False, collisionInfo=None):
+        if collisionInfo is None:
+            collisionInfo = dict()
+
+        if not collides:
+            self.collision_in_progress = False
+
+        if collides and not self.collision_in_progress:
+            self.collision_in_progress = True
+            if collides and 'multiply_speed' in collisionInfo:
+                self.speed = self.speed * collisionInfo['multiply_speed']
+                print("speed becomes {0}".format(self.speed))
+                self.collision_in_progress = True
+
+            if collides and 'change_rays' in collisionInfo:
+                self.remove_from_scene()
+                self.rays = self.rays + collisionInfo['change_rays']
+                if self.rays < 2:
+                    self.rays = 2
+                self.lines = [None for i in range(self.rays)]
+                self.add_to_scene(self.scene, self.min_x, self.min_y, self.max_x, self.max_y)
+                print("no of rays becomes {0}".format(self.rays))
+
         if None not in self.lines:
-            self.rot = self.rot + deltat / 250.0
+            self.rot = self.rot + self.speed * deltat / 250.0
             if collides:
                 self.thickness = THICK
                 if not self.sent and udp_client is not None:

@@ -64,13 +64,15 @@ class MyModel(object):
     def update(self, deltat):
         for el in self.model_elements['crosspoints']:
             collides = False
+            collisionInfo = {}
             for t in self.model_elements['triggers']:
                 if el.collidesWithItem(t):
                     collides = True
-            el.update(self.udp_client, deltat, collides)
+                    collisionInfo.update(t.get_collision_info())
+            el.update(self.udp_client, deltat, collides, collisionInfo)
 
         for el in self.model_elements['triggers']:
-            el.update(self.udp_client, deltat)
+            el.update(self.udp_client, deltat, collisionInfo)
 
     def update_time_left(self, total_time, time_left):
         self.total_time = total_time
