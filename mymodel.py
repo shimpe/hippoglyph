@@ -2,12 +2,6 @@ from myimage import MyImage
 
 class MyModel(object):
     def __init__(self):
-        self.model_elements = {
-            'crosspoints': [],
-            'triggers': []
-        }
-        self.total_time = 0
-        self.time_left = 0
         self.camera_image = None
 
     def set_camera_image(self, scene, camera_image):
