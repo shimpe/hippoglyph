@@ -28,6 +28,31 @@ s.waitForBoot({
 		15 : [],
 	);
 
+	~wavPath = PathName(thisProcess.nowExecutingPath).parentPath++"wavs/";
+	~allocBuffers = {
+		b = Dictionary.new;
+	};
+	~makeBuffers = {
+		PathName(~wavPath).entries.do({
+			| subfolder, idx |
+			("ZOEP "++subfolder).postln;
+			b = b.add(
+				idx.asSymbol ->
+				Array.fill(
+					subfolder.entries.size,
+					{
+						arg i;
+						subfolder.entries.postln;
+						Buffer.read(s, subfolder.entries[i].fullPath);
+					}
+				);
+			);
+		});
+	};
+	~allocBuffers.value;
+	~makeBuffers.value;
+	s.sync;
+
 	MIDIdef.freeAll;
 	MIDIClient.free;
 	MIDIClient.init;
