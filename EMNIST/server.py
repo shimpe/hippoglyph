@@ -61,7 +61,7 @@ def predict():
                 if item != 0:
                     z_flag = True
                     break
-            if z_flag == False:
+            if not z_flag:
                 x = np.delete(x, _len - index, 0)
         return x
 
@@ -107,7 +107,7 @@ def predict():
     return response
 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     # Parse optional arguments
     parser = argparse.ArgumentParser(
         description='A webapp for testing models generated from training.py on the EMNIST dataset')

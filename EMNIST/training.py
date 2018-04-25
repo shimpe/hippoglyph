@@ -60,13 +60,13 @@ def load_data(mat_file_path, width=28, height=28, max_=None, verbose=True):
     pickle.dump(mapping, open('bin/mapping.p', 'wb'))
 
     # Load training data
-    if max_ == None:
+    if max_ is None:
         max_ = len(mat['dataset'][0][0][0][0][0][0])
     training_images = mat['dataset'][0][0][0][0][0][0][:max_]
     training_labels = mat['dataset'][0][0][0][0][0][1][:max_]
 
     # Load testing data
-    if max_ == None:
+    if max_ is None:
         max_ = len(mat['dataset'][0][0][1][0][0][0])
     else:
         max_ = int(max_ / 6)
@@ -74,18 +74,18 @@ def load_data(mat_file_path, width=28, height=28, max_=None, verbose=True):
     testing_labels = mat['dataset'][0][0][1][0][0][1][:max_]
 
     # Reshape training data to be valid
-    if verbose == True: _len = len(training_images)
+    if verbose: _len = len(training_images)
     for i in range(len(training_images)):
-        if verbose == True: print('%d/%d (%.2lf%%)' % (i + 1, _len, ((i + 1) / _len) * 100), end='\r')
+        if verbose: print('%d/%d (%.2lf%%)' % (i + 1, _len, ((i + 1) / _len) * 100), end='\r')
         training_images[i] = reshape(training_images[i])
-    if verbose == True: print('')
+    if verbose: print('')
 
     # Reshape testing data to be valid
-    if verbose == True: _len = len(testing_images)
+    if verbose: _len = len(testing_images)
     for i in range(len(testing_images)):
-        if verbose == True: print('%d/%d (%.2lf%%)' % (i + 1, _len, ((i + 1) / _len) * 100), end='\r')
+        if verbose: print('%d/%d (%.2lf%%)' % (i + 1, _len, ((i + 1) / _len) * 100), end='\r')
         testing_images[i] = reshape(testing_images[i])
-    if verbose == True: print('')
+    if verbose: print('')
 
     # Extend the arrays to (None, 28, 28, 1)
     training_images = training_images.reshape(training_images.shape[0], height, width, 1)
@@ -148,7 +148,7 @@ def build_net(training_data, width=28, height=28, verbose=False):
                   optimizer='adadelta',
                   metrics=['accuracy'])
 
-    if verbose == True: print(model.summary())
+    if verbose: print(model.summary())
     return model
 
 
@@ -159,7 +159,7 @@ def train(model, training_data, callback=False, batch_size=256, epochs=10):
     y_train = np_utils.to_categorical(y_train, nb_classes)
     y_test = np_utils.to_categorical(y_test, nb_classes)
 
-    if callback == True:
+    if callback:
         # Callback for analysis in TensorBoard
         tbCallBack = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True,
                                                  write_images=True)
