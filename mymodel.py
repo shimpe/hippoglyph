@@ -1,7 +1,7 @@
 from myimage import MyImage
 
 class MyModel(object):
-    def __init__(self, udp_client):
+    def __init__(self):
         self.model_elements = {
             'crosspoints': [],
             'triggers': []
@@ -9,7 +9,6 @@ class MyModel(object):
         self.total_time = 0
         self.time_left = 0
         self.camera_image = None
-        self.udp_client = udp_client
 
     def set_camera_image(self, scene, camera_image):
         if scene is not None and camera_image is not None:
