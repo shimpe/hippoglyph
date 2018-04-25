@@ -8,13 +8,10 @@ from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
 from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
 from extract import load_model, unwarp, find_letters, cutout_letters, cleanup_word, predict, debug_display
 from mymodel import MyModel
+from mycontroller import MyController
 from ui_mainwindow import Ui_MainWindow
 from vectortween.Mapping import Mapping
-from pythonosc import udp_client
 from threading import RLock
-
-SUPERCOLLIDER_PORT = 57120
-GODOT_PORT = 23000
 
 class MyCanvas(object):
     def __init__(self, camera):
@@ -29,18 +26,8 @@ class MyCanvas(object):
         self.words = []
         self.lock = RLock()
         self.cam_image_fit_needed = True
-        try:
-            self.supercollider = udp_client.SimpleUDPClient("127.0.0.1", SUPERCOLLIDER_PORT)
-        except Exception as e:
-            print("Exception occurred:\n{0}".format(e))
-            self.supercollider = None
-        try:
-            self.godot = udp_client.SimpleUDPClient("127.0.0.1", GODOT_PORT)
-        except Exception as e:
-            print("Exception occurred:\n{0}".format(e))
-            self.godot = None
-
         self.datamodel = MyModel()
+        self.controller = MyController(self.datamodel)
         self.bindir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "EMNIST", "bin")
         self.model = load_model(self.bindir)
         self.mapping = pickle.load(open('%s/mapping.p' % self.bindir, 'rb'))
