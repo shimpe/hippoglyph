@@ -10,7 +10,7 @@ class MyImage(object):
         self.item = None
 
     def add_to_scene(self, scene, minx, miny, maxx, maxy):
-        assert (self.item == None)
+        assert (self.item is None)
         self.item = scene.addPixmap(self.pixmap)
 
     def remove_from_scene(self, scene):

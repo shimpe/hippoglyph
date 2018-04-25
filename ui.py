@@ -12,7 +12,6 @@ def main():
         canvas = MyCanvas(camera)
         canvas.show()
         canvas.display_model()
-        canvas.start_animation_timer()
         canvas.start_liveinput_timer()
 
         sys.exit(app.exec_())
