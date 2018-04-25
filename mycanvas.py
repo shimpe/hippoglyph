@@ -13,6 +13,8 @@ from vectortween.Mapping import Mapping
 from pythonosc import udp_client
 from threading import RLock
 
+SUPERCOLLIDER_PORT = 57120
+GODOT_PORT = 23000
 
 class MyCanvas(object):
     def __init__(self, camera):
@@ -28,11 +30,17 @@ class MyCanvas(object):
         self.lock = RLock()
         self.cam_image_fit_needed = True
         try:
-            self.udp_client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
+            self.supercollider = udp_client.SimpleUDPClient("127.0.0.1", SUPERCOLLIDER_PORT)
         except Exception as e:
             print("Exception occurred:\n{0}".format(e))
-            self.udp_client = None
-        self.datamodel = MyModel(self.udp_client)
+            self.supercollider = None
+        try:
+            self.godot = udp_client.SimpleUDPClient("127.0.0.1", GODOT_PORT)
+        except Exception as e:
+            print("Exception occurred:\n{0}".format(e))
+            self.godot = None
+
+        self.datamodel = MyModel()
         self.bindir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "EMNIST", "bin")
         self.model = load_model(self.bindir)
         self.mapping = pickle.load(open('%s/mapping.p' % self.bindir, 'rb'))
