@@ -1,7 +1,9 @@
 (
 ~synth = ScProphetRev2.new;
 ~synth.connect;
+~yoshimidi_out = MIDIOut.newByName("yoshimi", "input").latency_(Server.default.latency);
 MIDIClient.reset;
+
 /*
 MIDIIn.noteOn = {
 	| uid, chan, key, vel |
@@ -13,9 +15,10 @@ MIDIIn.control = {
 };
 */
 )
+
 (
 s.waitForBoot({
-	var melody, melody2, bass;
+	var melody, melody2, bass, mystery;
 	var table = NrpnTable.new;
 	var parser = TheoryNoteParser.new;
 	var wrapInit = { |synth, pattern, bank="F1", program="P1", modwheelval=nil, initLag = 0|
@@ -34,50 +37,186 @@ s.waitForBoot({
 			}
 		)
 	};
-	var horrornotes = Pbind(
+	var horrornotes;
+	var horrorcutoff_a;
+	var horrorcutoff_b;
+	var horror_pitchwheel;
+	var horrorpattern;
+	var partyaccomp;
+	var partymelody;
+	var partypattern;
+	var meditationchords;
+	var meditationmelody;
+
+	var osc_recv = NetAddr("127.0.0.1", nil);
+	var osc_send = NetAddr("127.0.0.1", 23000);
+
+	var notelut = Dictionary.newFrom([
+		"do" : "c4",
+		"dokruis" : "c#4",
+		"re" : "d4",
+		"rekruis" : "d#4",
+		"mi" : "e4",
+		"fa" : "f4",
+		"fakruis" : "f#4",
+		"sol" : "g4",
+		"solkruis" : "g#4",
+		"la" : "a4",
+		"lakruis" : "a#4",
+		"si" : "b4"
+	]);
+
+	OSCdef(\camera).enable;
+	OSCdef(\camera, {
+		| msg, time, addr, recvPort |
+		var command = msg[3].asString;
+		command.postln;
+		if (notelut[command].notNil) {
+			var note = notelut[command];
+			if (~melody_notes.includesEqual(note).not) {
+				~melody_notes = ~melody_notes.add(note);
+			};
+		};
+		if (command.compare("jam", ignoreCase:true) == 0) {
+			~flags[\jam] = true;
+		};
+		if (command.compare("tweedestem", ignoreCase:true) == 0) {
+			~flags[\secondvoice] = true;
+		};
+		if (command.compare("octavieer", ignoreCase:true) == 0) {
+			~flags[\octaviate] = true;
+		};
+		if (command.compare("stopnoten", ignoreCase:true) == 0) {
+			if (Pdef(\notes).isPlaying) {
+				Pdef(\notes).stop;
+			};
+		};
+		if (command.compare("noten", ignoreCase:true) == 0) {
+			if (Pdef(\notes).isPlaying.not) {
+				Pdef(\notes).play;
+			};
+		};
+		if (command.compare("horror", ignoreCase:true) == 0) {
+			if (~hplayer.isNil) {
+				~hplayer = ~horror.play();
+			};
+		};
+		if (command.compare("stophorror", ignoreCase:true) == 0) {
+			~hplayer.stop;
+		};
+		if (command.compare("meditatie", ignoreCase:true) == 0) {
+			if (~mplayer.isNil) {
+				~mplayer = ~meditation.play();
+			};
+		};
+		if (command.compare("stopmeditatie", ignoreCase:true) == 0) {
+			~mplayer.stop();
+		};
+		if (command.compare("party", ignoreCase:true) == 0) {
+			if (~pplayer.isNil) {
+				~pplayer = ~party.play();
+			};
+		};
+		if (command.compare("stopparty", ignoreCase:true) == 0) {
+			~pplayer.stop();
+		};
+		if (command.compare("mysterie", ignoreCase:true) == 0) {
+			if (~mysplayer.isNil) {
+				~mysplayer = ~mystery.play();
+			};
+		};
+		if (command.compare("stopmysterie", ignoreCase:true) == 0) {
+			~mysplayer.stop();
+		};
+	}, "/camera/word", osc_recv);
+
+	OSCdef(\minute).enable;
+	OSCdef(\minute, {
+		| msg, time, addr, recvPort |
+		msg.postln;
+		Synth(\bufplay, [\bufnum, b["shortbleep"].choose.bufnum, \speed, 1, \amp, 1.0]);
+	}, "/godot/clockplate", osc_recv);
+
+	~osc_note_handler = {
+		| ev |
+		var midinotes = [];
+		if (ev.isRest.not) {
+			if (ev[\midinote].class == Function) {
+				if (ev[\freq].class == Array) {
+					midinotes = ev[\freq].collect({|el| el.cpsmidi.round(1).mod(12).asInteger; });
+				} /* else */ {
+					ev[\freq].class.postln;
+					midinotes = [ev[\freq].cpsmidi.round(1).mod(12).asInteger];
+				}
+			} /* else */ {
+				if (ev[\midinote].class == Array) {
+					midinotes = ev[\midinote].collect({|el| el.round(1).mod(12).asInteger; });
+				} /* else */ {
+					if (ev[\midinote].class != TheoryNoteParser) {
+						midinotes = [ ev[\midinote] ];
+					};
+				};
+			};
+			midinotes.do({
+				| note |
+				osc_send.sendMsg("/sc/note", note.round(1).mod(12).asInteger, ev[\dur]);
+			});
+		};
+		1; // prevent patterns from stopping by returning nil after rest...
+	};
+
+	horrornotes = Pbind(
 		\type, \midi,
 		\midicmd, \noteOn,
 		\midiout, ~synth.midi_out,
 		\chan, 0,
 		\midinote, Pseq([Prand((30..50), 1), Prand((30..50), 1)], inf),
 		\amp, Pbrown(70,100,1,inf),
-		\dur, Prand((3..7), inf)
+		\dur, Prand((7..14), inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
-	var horrorcutoff_a = Pbind(
+	horrorcutoff_a = Pbind(
 		\instrument, \default,
 		\amp, 0,
 		\number, table.str2num('LPF_CUTOFF', "A"),
-		\value, Pbrown(20, 100, 10),
+		\value, Pbrown(20, 100, 1),
 		\dur, Pfunc({1.rrand(5)}),
 		\channel, 1,
 		\receiver, Pfunc({ | event | ~synth.sendNRPN(event[\number], event[\value], event[\channel], verbose:false)}),
 	);
-	var horrorcutoff_b = Pbindf(
+	horrorcutoff_b = Pbindf(
 		horrorcutoff_a,
 		\number, table.str2num('LPF_CUTOFF', "B")
 	);
-	var horror_pitchwheel = Pbind(
+	horror_pitchwheel = Pbind(
 		\type, \midi,
 		\midicmd, \bend,
 		\midiout, ~synth.midi_out,
 		\chan, 0,
-		\val, Pbrown(1,16384,100,inf),
+		\val, Pbrown(1,16384,10,inf),
 		\dur, Pfunc({1.rrand(5)}),
 	);
-	var horrorpattern = Ppar([horrornotes, horrorcutoff_a, horrorcutoff_b, horror_pitchwheel], 1);
+	horrorpattern = Ppar([horrornotes, horrorcutoff_a, horrorcutoff_b, horror_pitchwheel], 1);
 
-	var partyaccomp = Pbind(
+	partyaccomp = Pbind(
 		\type, \midi,
 		\midicmd, \noteOn,
 		\midiout, ~synth.midi_out,
 		\chan, 0,
 		\midinote, Pseq([
 			45, 50, 48
-		], inf).trace,
+		], inf),
 		\legato, 1,
-		\dur, Pseq([ 4, 1, 1 ] * (8 /*duration in beats*/ /(135 /*bpm*/ /60)), inf)
+		\dur, Pseq([ 4, 1, 1 ] * (8 /*duration in beats*/ /(135 /*bpm*/ /60)), inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
-	var partymelody = Pbind(
+	partymelody = Pbind(
 		\type, \midi,
 		\midicmd, \noteOn,
 		\midiout, ~synth.midi_out,
@@ -139,10 +278,13 @@ s.waitForBoot({
 			]* (60/135), 38);*/
 		], inf),
 		\legato, 0.95,
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
-	var partypattern = Ppar([partyaccomp, partymelody], 1);
-
-	var meditationchords = Pbind(
+	partypattern = Ppar([partyaccomp, partymelody], 1);
+	meditationchords = Pbind(
 		\instrument, \pad,
 		\freq, Pseq([
 			Pseq([
@@ -158,27 +300,52 @@ s.waitForBoot({
 				"f2 c4 f4 g4 ab4 f5",
 				"c2 g3 eb4 g4 eb5",
 		].collect({|el| parser.asMidi(el).midicps}), inf)], 1),
+		\amp, 0.3,
 		\dur, Pseq([5],inf),
 		\s, Pkey(\dur),
-		\a, 0.4
+		\a, 0.4,
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
 
-	var meditationmelody = Pbind(
+	meditationmelody = Pbind(
 		\instrument, \flute,
 		\freq, Pxrand(parser.asMidi("c5 eb5 g5 bb5 c6").midicps ++ [Rest(), Rest()], inf),
 		\dur, Pbrown(lo:0.1,hi:1.0, step:0.125, length:inf),
 		\a, Pkey(\dur)*0.95,
 		\amp, Pseq([
 			Pseq((((1..16)/16)*0.5), 1),
-			Pbrown(lo:0.3,hi:0.6,step:0.1,length:inf)], inf)
+			Pbrown(lo:0.3,hi:0.6,step:0.1,length:inf)], inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
+
+	mystery = Pbind(
+		\type, \midi,
+		\midicmd, \noteOn,
+		\midiout, ~yoshimidi_out,
+		\chan, 0,
+		\midinote, Pseq([Prand((10..20), 1), Prand((10..20), 1)], inf),
+		\amp, Pbrown(70,100,1,inf),
+		\dur, Prand((7..14), inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
+	);
+
 
 	~horror = wrapInit.(~synth, horrorpattern, "F3", "P28",	0);
 	~party = wrapInit.(~synth, partypattern, "F2", "P56", 82, 1);
 	~meditation = Ptpar([0.0, meditationchords, 8*5.0, meditationmelody]);
+	~mystery = mystery;
 
 	SynthDef(\pad, {
-		| out = 0, freq = 440, gate=1, a = 0.1, s = 3, r = 1|
+		| out = 0, freq = 440, amp=0.5, gate=1, a = 0.1, s = 3, r = 1|
 		var freqs = { freq * LFNoise2.kr(freq:1,mul:0.01,add:1) }!24;
 		var gen = LFSaw.ar(freq:freqs) * 0.1;
 		//var fmod = 1;
@@ -189,7 +356,7 @@ s.waitForBoot({
 		//var modspeed = SinOsc.kr(0.1,phase:0).range(1/s, 10);
 		var snd = RLPF.ar(in:gen, freq:SinOsc.kr(modspeed).range(freqs*0.8, freqs*1.2) * fmod, rq:rqmod);
 		var env = EnvGen.ar(Env.new(levels:[0,1,1,0], times:[a, s, r]), gate, doneAction:2);
-		Out.ar(bus:out, channelsArray:env*Splay.ar(snd.tanh));
+		Out.ar(bus:out, channelsArray:amp*env*Splay.ar(snd.tanh));
 	}).add;
 
 	SynthDef(\flute, {
@@ -238,7 +405,14 @@ s.waitForBoot({
 
 	s.sync;
 
-	~killnotes = { ~synth.all_notes_off; CmdPeriod.remove(~killnotes); };
+	~killnotes = {
+		~synth.all_notes_off;
+		~hplayer = nil;
+		~mplayer = nil;
+		~pplayer = nil;
+		~mysplayer = nil;
+		CmdPeriod.remove(~killnotes);
+	};
 
 
 	~synth = ScProphetRev2.new;
@@ -253,8 +427,7 @@ s.waitForBoot({
 		\bass : false
 	]);
 
-	~melody_notes = ["c4"];
-	~bass_notes = ["a3", "a2"];
+	~melody_notes = [];
 	~allowed_durs = [1/4, 1/8, 1/16]*4;
 
 	melody = Pbind(
@@ -265,12 +438,16 @@ s.waitForBoot({
 		\instrument, \default,
 		\midinote, Pfunc({
 			|ev|
-			var note = parser.asMidi(~melody_notes.choose);
-			if (~flags[\octaviate]) {
-				note = note + ((1.rand2)*12);
+			if (~melody_notes.size == 0) {
+				Rest()
+			} /* else */
+			{
+				var note = parser.asMidi(~melody_notes.choose);
+				if (~flags[\octaviate]) {
+					note = note + ((1.rand2)*12);
+				};
+				note;
 			};
-
-			note;
 		}),
 		\dur, Pfunc({
 			|ev|
@@ -280,7 +457,11 @@ s.waitForBoot({
 				1;
 			};
 		}),
-		\amp, Pbrown(0.5,0.8,0.125,inf)
+		\amp, Pbrown(0.5,0.8,0.125,inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
 	);
 
 	melody2 = Pbind(
@@ -309,7 +490,12 @@ s.waitForBoot({
 				1;
 			};
 		}),
-		\amp, Pbrown(0.5,0.8,0.125,inf)
+		\amp, Pbrown(0.5,0.8,0.125,inf),
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
+
 	);
 
 	bass = Pbind(
@@ -337,48 +523,23 @@ s.waitForBoot({
 			};
 		}),
 		\amp, 0.8,
+		\mykey, Pfunc({
+			|ev|
+			~osc_note_handler.(ev);
+		})
+
 	);
 
 	~initpattern = wrapInit.(~synth, Ppar([melody,melody2,bass], 1), "F2", "P1", 0);
 	Pdef(\notes, ~initpattern);
-
+	Pdef(\notes).play;
 	CmdPeriod.add(~killnotes);
 });
 
 )
-
-~event_type = \default;
-
-Pdef(\notes).play;
-
-~melody_notes = ["c4", "e4"];
-~melody_notes = ["c4", "e4", "g4"];
-~melody_notes = ["c4", "e4", "g4", "bb4"];
-~melody_notes = ["c4", "e4","g4", "bb4", "f#4"];
-~bass_notes = ["c2"];
-~flags[\jam] = true;
-~flags[\octaviate] = true;
-~flags[\bass] = true;
-~flags[\secondvoice] = true;
-
-~event_type = \midi;
-
-~bass_notes = ["c2", "g2"];
-
-~flags[\bass] = false;
-
-Pdef(\notes).stop;
-
-~hplayer = ~horror.play();
-~hplayer.stop;
-~mplayer = ~meditation.play();
-~mplayer.stop;
-~pplayer = ~party.play();
-~pplayer.stop;
 
 Synth(\bufplay, [\bufnum, b["clocks"].choose.bufnum, \speed, 1, \amp, 5.0]);
 Synth(\bufplay, [\bufnum, b["grind"].choose.bufnum, \speed, 1, \amp, 5.0]);
 Synth(\bufplay, [\bufnum, b["purr"].choose.bufnum, \speed, 1, \amp, 5.0]);
 
 ~killnotes.();
-

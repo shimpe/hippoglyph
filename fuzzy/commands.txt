@@ -17,3 +17,17 @@ meditatie
 fluit
 piano
 t
+octavieer
+jam
+stopnoten
+tweedestem
+horror
+stophorror
+meditatie
+stopmeditatie
+mysterie
+stopmysterie
+party
+stopparty
+noten
+

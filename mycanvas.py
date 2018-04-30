@@ -34,6 +34,7 @@ class MyCanvas(object):
 
     def display_model(self):
         self.datamodel.set_camera_image(self.camera_scene, self.camera.image)
+        self.controller.send_updates()
 
     def show(self):
         self.mainwin.showMaximized()
@@ -62,17 +63,15 @@ class MyCanvas(object):
             self.counter += 1
             if ok and (self.counter % READ_INTERVAL == 0):
                 unwarped_image = self.image_to_words(image)
+                mapped_words = []
                 for i, w in enumerate(self.words):
                     imgw = unwarped_image.shape[1]
-                    mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, CAMWIDTH)
+                    mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, 1023)
                     imgh = unwarped_image.shape[0]
-                    mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, CAMHEIGHT)
+                    mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, 599)
                     if w is not None:
-                        if w[0] == "t":
-                            pass
-                        else:
-                            print("{0}".format(w))
-                            pass
+                        mapped_words.append((w, mapped_x, mapped_y))
+                self.datamodel.words = mapped_words
                 self.display_model()
 
             camBounds = self.camera_scene.itemsBoundingRect()
