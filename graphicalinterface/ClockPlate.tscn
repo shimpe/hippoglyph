@@ -1,0 +1,160 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://ClockPlate.gd" type="Script" id=1]
+[ext_resource path="res://art/bluebackground.jpg" type="Texture" id=2]
+[ext_resource path="res://art/plate0.png" type="Texture" id=3]
+[ext_resource path="res://Note.tscn" type="PackedScene" id=4]
+[ext_resource path="res://OSCsender.gd" type="Script" id=5]
+[ext_resource path="res://MultiBar.tscn" type="PackedScene" id=6]
+[ext_resource path="res://Gauge.tscn" type="PackedScene" id=7]
+
+[sub_resource type="Animation" id=1]
+
+resource_name = "rotate"
+length = 60.0
+loop = true
+step = 0.1
+tracks/0/type = "value"
+tracks/0/path = NodePath(".:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( -0.2, 60 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ 0.0, 360.0 ]
+}
+
+[node name="Node2D" type="Node2D" index="0"]
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_vertical_guides_": [ 150.0 ]
+}
+
+[node name="bluebackground" type="Sprite" parent="." index="0"]
+position = Vector2( 512.108, 301.061 )
+scale = Vector2( 0.532553, 0.556164 )
+texture = ExtResource( 2 )
+_sections_unfolded = [ "Material", "Visibility" ]
+
+[node name="plate0" type="Sprite" parent="." index="1"]
+modulate = Color( 1, 1, 1, 0.388235 )
+position = Vector2( 512, 300 )
+rotation = 0.695472
+scale = Vector2( 0.4, 0.4 )
+texture = ExtResource( 3 )
+_sections_unfolded = [ "Animation", "Material", "Transform", "Visibility" ]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="plate0" index="0"]
+root_node = NodePath("..")
+autoplay = "rotate"
+playback_process_mode = 1
+playback_default_blend_time = 0.0
+playback_speed = 1.0
+anims/rotate = SubResource( 1 )
+blend_times = [  ]
+_sections_unfolded = [ "Pause", "Playback Options" ]
+
+[node name="do" parent="." index="2" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Material", "Transform", "Visibility" ]
+
+[node name="dosharp" parent="." index="3" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform", "Visibility" ]
+
+[node name="re" parent="." index="4" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="resharp" parent="." index="5" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="mi" parent="." index="6" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="fa" parent="." index="7" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="fasharp" parent="." index="8" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="sol" parent="." index="9" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="solsharp" parent="." index="10" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="la" parent="." index="11" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="lasharp" parent="." index="12" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="si" parent="." index="13" instance=ExtResource( 4 )]
+_sections_unfolded = [ "Transform" ]
+
+[node name="OSCsender" type="OSCsender" parent="." index="14"]
+ip = "127.0.0.1"
+port = 57120
+buffersize = 1024
+autostart = true
+autoclear = true
+script = ExtResource( 5 )
+_sections_unfolded = [ "Network" ]
+
+[node name="MultiBar" parent="." index="15" instance=ExtResource( 6 )]
+position = Vector2( 0, 500 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Aandacht" parent="." index="16" instance=ExtResource( 7 )]
+position = Vector2( 150, 100 )
+scale = Vector2( 0.6, 0.6 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Label" type="Label" parent="Aandacht" index="1"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = -60.0
+margin_top = 30.0
+margin_bottom = 44.0
+rect_scale = Vector2( 2, 2 )
+rect_pivot_offset = Vector2( 0, 0 )
+rect_clip_content = false
+mouse_filter = 2
+mouse_default_cursor_shape = 0
+size_flags_horizontal = 1
+size_flags_vertical = 4
+text = "Aandacht"
+percent_visible = 1.0
+lines_skipped = 0
+max_lines_visible = -1
+_sections_unfolded = [ "Rect" ]
+
+[node name="Meditatie" parent="." index="17" instance=ExtResource( 7 )]
+position = Vector2( 874, 100 )
+scale = Vector2( 0.6, 0.6 )
+_sections_unfolded = [ "Transform" ]
+
+[node name="Label2" type="Label" parent="Meditatie" index="1"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = -60.0
+margin_top = 30.0
+margin_bottom = 44.0
+rect_scale = Vector2( 2, 2 )
+rect_pivot_offset = Vector2( 0, 0 )
+rect_clip_content = false
+mouse_filter = 2
+mouse_default_cursor_shape = 0
+size_flags_horizontal = 1
+size_flags_vertical = 4
+text = "Meditatie"
+percent_visible = 1.0
+lines_skipped = 0
+max_lines_visible = -1
+_sections_unfolded = [ "Rect" ]
+

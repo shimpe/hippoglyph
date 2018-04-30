@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://OSCreceiver.gd" type="Script" id=1]
+[ext_resource path="res://ClockPlate.tscn" type="PackedScene" id=2]
+
+[node name="Node2D" type="Node2D" index="0"]
+
+[node name="OSCreceiver" type="OSCreceiver" parent="." index="0"]
+port = 23000
+max_queue = 100
+autostart = true
+emit_signal = true
+script = ExtResource( 1 )
+_sections_unfolded = [ "Network" ]
+
+[node name="Clock" parent="." index="1" instance=ExtResource( 2 )]
+
