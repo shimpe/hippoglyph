@@ -16,7 +16,6 @@ party
 meditatie
 fluit
 piano
-t
 octavieer
 jam
 stopnoten
@@ -30,4 +29,7 @@ stopmysterie
 party
 stopparty
 noten
-
+brein
+stopbrein
+ambient
+stopambient

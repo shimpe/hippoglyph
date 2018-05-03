@@ -2,5 +2,6 @@ scide: scapes.sc
 godot: clocks
 hippoglyph: python ui.py
 mindwave-supercollider: python2 main.py, after "autoconnect" script
-yoshimi -a load artofsound.state file
+yoshimi -a load artofsound.state file, increase global volume to max
+
 

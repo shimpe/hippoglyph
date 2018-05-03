@@ -4,16 +4,17 @@ import os
 
 
 @contextlib.contextmanager
-def CameraResource(camId, save_diagnostics=False, load_diagnostics=False):
+def CameraResource(no_of_cameras, camId, save_diagnostics=True, load_diagnostics=False):
     class MyCamera(object):
-        def __init__(self, camId, save_diagnostics=save_diagnostics, load_diagnostics=load_diagnostics):
+        def __init__(self, no_of_cameras, camId, save_diagnostics=save_diagnostics, load_diagnostics=load_diagnostics):
+            self.no_of_cameras = no_of_cameras
             self.camId = camId
             self.sizeX = None
             self.sizeY = None
             self.image = None
             self.error = None
             if not load_diagnostics:
-                self.capture = cv2.VideoCapture(self.camId)
+                self.capture = cv2.VideoCapture(self.no_of_cameras)
             else:
                 self.capture = None
             self.save_diagnostics = save_diagnostics
@@ -33,10 +34,10 @@ def CameraResource(camId, save_diagnostics=False, load_diagnostics=False):
             if not self.load_diagnostics and self.capture is not None:
                 self.error, self.image = self.capture.read()
             else:
-                self.error, self.image = 1, cv2.imread(os.path.join(self.save_diagnostics_path, "diagnostic_image.png"))
+                self.error, self.image = 1, cv2.imread(os.path.join(self.save_diagnostics_path, "diagnostic_image.jpg"))
 
             if self.save_diagnostics:
-                cv2.imwrite(os.path.join(self.save_diagnostics_path, "diagnostic_image.png"), self.image)
+                cv2.imwrite(os.path.join(self.save_diagnostics_path, "diagnostic_image.jpg"), self.image)
 
             return self.error, self.image
 
@@ -44,7 +45,7 @@ def CameraResource(camId, save_diagnostics=False, load_diagnostics=False):
             if self.capture is not None:
                 cv2.VideoCapture(self.camId).release()
 
-    camera = MyCamera(camId)
+    camera = MyCamera(no_of_cameras, camId)
     yield camera
     print("FINI!")
     camera.release()

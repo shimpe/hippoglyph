@@ -5,11 +5,12 @@ from constants import CAMWIDTH, CAMHEIGHT
 from mycamera import CameraResource
 from mycanvas import MyCanvas
 
-CAMID = 0
+CAMID = 1
+NO_OF_CAM = 2
 
 def main():
     app = QApplication(sys.argv)
-    with CameraResource(0, load_diagnostics=False, save_diagnostics=False) as camera:
+    with CameraResource(NO_OF_CAM, CAMID, load_diagnostics=False, save_diagnostics=True) as camera:
         camera.set_image_size(CAMWIDTH, CAMHEIGHT)
         canvas = MyCanvas(camera)
         canvas.show()

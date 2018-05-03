@@ -62,6 +62,11 @@ func on_osc(msg):
 		var value = msg.arg(0)
 		var mappedvalue = linlin(value,0,100,-1,1,true)
 		get_node("Meditatie").set_value(mappedvalue)
+	#if (msg.address() == "/mindwave/resetbrain"):
+	#	for i in range(100):
+	#		get_node("MultiBar").set_value(0)
+	#	get_node("Aandacht").set_value(0)
+	#	get_node("Meditatie"). set_value(0)
 
 func _ready():
 	# Called when the node is added to the scene for the first time.

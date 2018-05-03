@@ -18,7 +18,7 @@ MIDIIn.control = {
 
 (
 s.waitForBoot({
-	var melody, melody2, bass, mystery;
+	var melody, melody2, bass, mystery, brainpattern1, brainpattern2;
 	var table = NrpnTable.new;
 	var parser = TheoryNoteParser.new;
 	var wrapInit = { |synth, pattern, bank="F1", program="P1", modwheelval=nil, initLag = 0|
@@ -66,6 +66,43 @@ s.waitForBoot({
 		"si" : "b4"
 	]);
 
+	~lastattentionvalue = 0;
+	~lastmeditationvalue = 0;
+
+	OSCdef(\raw).disable;
+	OSCdef.new(\raw, {
+		| msg, time, addr, recPort, argTemplate, dispatcher |
+
+		x = Synth(\brainSine, [\out, 0,
+			\rawval, msg[1]
+		]);
+
+		y = Synth(\brainNoise, [\out, 0,
+			\rawval, msg[1]
+		]);
+	}, "/mindwave/raw");
+
+	OSCdef(\attention).disable;
+	OSCdef(\attention, {
+		| msg, time, addr, recPort, argTemplate, dispatcher |
+		//msg.postln;
+		~lastattentionvalue = msg[1];
+	}, "/mindwave/attention");
+
+	OSCdef(\meditation).disable;
+	OSCdef(\meditation, {
+		| msg, time, addr, recPort, argTemplate, dispatcher |
+		//msg.postln;
+		~lastmeditationvalue = msg[1];
+	}, "/mindwave/meditation");
+
+	OSCdef(\eyeblink).disable;
+	OSCdef(\eyeblink, {
+		| msg, time, addr, recPort, argTemplate, dispatcher |
+		//msg.postln;
+		Synth(\bufplay, [\bufnum, b["eyeblink"].choose.bufnum, \speed, 1, \amp, 1.0]);
+	}, "/mindwave/eyeblink");
+
 	OSCdef(\camera).enable;
 	OSCdef(\camera, {
 		| msg, time, addr, recvPort |
@@ -103,6 +140,7 @@ s.waitForBoot({
 		};
 		if (command.compare("stophorror", ignoreCase:true) == 0) {
 			~hplayer.stop;
+			~hplayer = nil;
 		};
 		if (command.compare("meditatie", ignoreCase:true) == 0) {
 			if (~mplayer.isNil) {
@@ -111,6 +149,7 @@ s.waitForBoot({
 		};
 		if (command.compare("stopmeditatie", ignoreCase:true) == 0) {
 			~mplayer.stop();
+			~mplayer = nil;
 		};
 		if (command.compare("party", ignoreCase:true) == 0) {
 			if (~pplayer.isNil) {
@@ -119,6 +158,7 @@ s.waitForBoot({
 		};
 		if (command.compare("stopparty", ignoreCase:true) == 0) {
 			~pplayer.stop();
+			~pplayer = nil;
 		};
 		if (command.compare("mysterie", ignoreCase:true) == 0) {
 			if (~mysplayer.isNil) {
@@ -127,6 +167,41 @@ s.waitForBoot({
 		};
 		if (command.compare("stopmysterie", ignoreCase:true) == 0) {
 			~mysplayer.stop();
+			~mysplayer = nil;
+		};
+		if (command.compare("brein", ignoreCase:true) == 0) {
+			OSCdef(\raw).enable;
+			OSCdef(\attention).enable;
+			OSCdef(\meditation).enable;
+			OSCdef(\eyeblink).enable;
+			if (~brainplayer.isNil && ~brainpattern.notNil) {
+				"YO".postln;
+				~brainplayer = ~brainpattern.play;
+			} {
+				("brainplayer = "++~brainplayer).postln;
+				("brainpattern = "++~brainpattern).postln;
+			};
+		};
+		if (command.compare("stopbrein", ignoreCase:true) == 0) {
+			OSCdef(\raw).disable;
+			OSCdef(\attention).disable;
+			OSCdef(\meditation).disable;
+			OSCdef(\eyeblink).disable;
+			if (~brainplayer.notNil) {
+				~brainplayer.stop;
+				~brainplayer = nil;
+			};
+		};
+		if (command.compare("ambient", ignoreCase:true) == 0) {
+			if (~ambient.isPlaying.not) {
+				~ambient = Synth(\bufplay, [\bufnum, b["ambient"].choose.bufnum, \speed, 1, \amp, 1.0]);
+			};
+		};
+		if (command.compare("stopambient", ignoreCase:true) == 0) {
+			if (~ambient.notNil) {
+				~ambient.free;
+				~ambient = nil;
+			};
 		};
 	}, "/camera/word", osc_recv);
 
@@ -145,7 +220,7 @@ s.waitForBoot({
 				if (ev[\freq].class == Array) {
 					midinotes = ev[\freq].collect({|el| el.cpsmidi.round(1).mod(12).asInteger; });
 				} /* else */ {
-					ev[\freq].class.postln;
+					//ev[\freq].class.postln;
 					midinotes = [ev[\freq].cpsmidi.round(1).mod(12).asInteger];
 				}
 			} /* else */ {
@@ -338,11 +413,19 @@ s.waitForBoot({
 		})
 	);
 
+	brainpattern1 = Pmono(
+		\singer,
+		\freq, Pfunc({(30+(~lastattentionvalue/2)).midicps}).trace,
+		\vibrato, Pfunc({(~lastmeditationvalue/10)}).trace,
+		\dur, 1,
+		\amp, 0.5,
+	);
 
 	~horror = wrapInit.(~synth, horrorpattern, "F3", "P28",	0);
 	~party = wrapInit.(~synth, partypattern, "F2", "P56", 82, 1);
 	~meditation = Ptpar([0.0, meditationchords, 8*5.0, meditationmelody]);
 	~mystery = mystery;
+	~brainpattern = brainpattern1;
 
 	SynthDef(\pad, {
 		| out = 0, freq = 440, amp=0.5, gate=1, a = 0.1, s = 3, r = 1|
@@ -374,6 +457,45 @@ s.waitForBoot({
 		Out.ar(out, BPF.ar(LFSaw.ar(freq), freq, 2, mul: EnvGen.kr( Env.perc( atk, dur-atk, amp, 6 ), doneAction: 2 )) ! 2);
 	}).add;
 
+	SynthDef(\brainNoise, {
+
+		| out = 0, rawval = 0, midi=60, rq=0.005, amp=0.01, atk=0.01, rel=0.25, spread=0.1 |
+
+		var sig, env;
+
+		sig = {BrownNoise.ar(0.25)}!2;
+
+		sig = BPF.ar(sig, [ ((midi-spread)),
+			(midi + (2*12)).midicps,
+			((midi+spread) + (2*12)).midicps], rq, mul:1/rq.sqrt);
+
+		sig = Splay.ar(sig);
+		sig = DynKlank.ar(`[[rawval*8, rawval*10, rawval*11, rawval*13], nil, [1, 1, 1, 1]], sig);
+		env = EnvGen.kr(Env.perc(atk,rel), doneAction:2);
+
+		sig = Splay.ar(sig * env * amp);
+
+		Out.ar(out, sig);
+
+	}).add;
+
+
+	SynthDef(\brainSine, {
+		| out = 0, amp=0.01, rawval|
+		Out.ar(out,
+			Splay.ar(
+				amp*SinOsc.ar([rawval*4.9],  0, 0.5)*EnvGen.ar(Env.linen(0.01, 0.2, 0.01), doneAction:2)));
+	}).add;
+
+	SynthDef(\singer, {
+		| out=0, freq=440, amp=0.5, vibrato=6|
+		var lfo, lfo2, lfo3, sig;
+		lfo = SinOsc.kr(1/5, 0).range(250,1000);
+		lfo2 = SinOsc.kr(1/5, 0).range(0.1,0.9);
+		lfo3 = SinOsc.kr(vibrato).range(0.3, 1);
+		sig = lfo3*RLPF.ar(in:VarSaw.ar(freq:Lag.ar(in:K2A.ar(freq), lagTime:0.3), iphase:0, width:lfo2, mul:amp), freq:lfo, rq:200/lfo);
+		Out.ar(out, sig!2);
+	}).add;
 
 	SynthDef(\bufplay, {
 		| out = 0, bufnum = 0, speed = 1.0, amp = 1.0 |
