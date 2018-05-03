@@ -6,7 +6,8 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
 
 from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
-from extract import load_model, unwarp, find_letters, cutout_letters, cleanup_word, predict, debug_display
+from extract import load_model, unwarp, cleanup_word, predict, \
+    threshold_image, denoise_image, segment_letters, order_letters
 from mymodel import MyModel
 from mycontroller import MyController
 from ui_mainwindow import Ui_MainWindow
@@ -84,13 +85,11 @@ class MyCanvas(object):
         unwarped_image = unwarp(image)
         if unwarped_image is None:
             print("SKIP DETECTION")
-        elif unwarped_image is not None:
-            # import cv2
-            # cv2.imshow("unwarped image", unwarped_image)
-            letters, letter_image = find_letters(unwarped_image)
-            cut_letters = cutout_letters(unwarped_image, letters)
-            # import cv2
-            # cv2.imshow("letter_image", letter_image)
+        else:
+            image = threshold_image(unwarped_image)
+            image = denoise_image(image)
+            all_letters = segment_letters(image)
+            cut_letters = order_letters(all_letters)
             self.words = []
             current_word = ""
             avgX = 0

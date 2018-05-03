@@ -6,6 +6,8 @@ import numpy as np
 from keras.models import model_from_yaml
 from globals import GLOBAL_hobj, GLOBAL_fuzzylist
 
+Y_SQUASH = 75
+
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
@@ -74,10 +76,15 @@ def four_point_transform(image, pts):
 def unwarp(image):
     img_scale = cv2.resize(image, None, fx=1 / 3.0, fy=1 / 3.0, interpolation=cv2.INTER_CUBIC)
     #img_scale = image
+    #cv2.imshow("scale", img_scale)
     img = cv2.cvtColor(img_scale, cv2.COLOR_BGR2GRAY);
+    #cv2.imshow("2gray", img)
     gray = cv2.bilateralFilter(img, 11, 21, 21)
+    #cv2.imshow("bilateral", gray)
     edged = cv2.Canny(gray, 0, 70)
+    #cv2.imshow("edged", edged)
     image2, contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #cv2.imshow("image2", image2)
     cnts = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
     # loop over our contours
     screenCnt = []
@@ -95,15 +102,16 @@ def unwarp(image):
         return None
 
     warped = four_point_transform(img_scale, screenCnt.reshape(4, 2))
-    height = warped.shape[0]
-    width = warped.shape[1]
-    print ("width: {0}, height: {1}".format(width, height))
-    xmargin = 10
-    ymargin = 10
-    crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
-
-    #cv2.imshow("unwarped", warped_copy)
-    return crop_img
+    #cv2.imshow("warped", warped)
+    #height = warped.shape[0]
+    #width = warped.shape[1]
+    #print ("width: {0}, height: {1}".format(width, height))
+    #xmargin = 10
+    #ymargin = 10
+    #crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
+    #cv2.imshow("cropped", crop_img)
+    #cv2.waitKey(0)
+    return warped
 
 
 # Malisiewicz et al.
@@ -276,7 +284,7 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
     result = []
     prevX = None
     prevY = None
-    for i, l in enumerate(sorted(letters, key=lambda x: (int(x[1] / 100), x[0]))):
+    for i, l in enumerate(sorted(letters, key=lambda x: (int(x[1] / Y_SQUASH), x[0]))):
         new_word = False
         x = l[0]
         y = l[1]
@@ -308,6 +316,85 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
         ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         #th3 = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
         #                            cv2.THRESH_BINARY, 11, 2)
+
+        padded_cropped_letter = cv2.copyMakeBorder(th3, top=extra_height, bottom=extra_height,
+                                                   left=extra_width, right = extra_width,
+                                                   borderType=cv2.BORDER_CONSTANT, value=[255,255,255])
+        current_width = padded_cropped_letter.shape[1]
+        current_height = padded_cropped_letter.shape[0]
+        #cv2.imshow("{0}".format(i + 1), padded_cropped_letter)
+        scaled_cropped_letter = cv2.resize(padded_cropped_letter, None, fx=(desired_width - 2 * xmargin) / current_width,
+                                           fy=(desired_height - 2 * ymargin) / current_height,
+                                           interpolation=cv2.INTER_LINEAR)
+
+        if (xmargin > 0) or (ymargin > 0):
+            bordered = cv2.copyMakeBorder(scaled_cropped_letter, top=ymargin, bottom=ymargin,
+                                          left=xmargin, right=xmargin,
+                                          borderType=cv2.BORDER_CONSTANT,
+                                          value=[255, 255, 255])
+        else:
+            bordered = scaled_cropped_letter
+
+        # th3_blur = cv2.GaussianBlur(255-th3, (5, 5), 0)
+        th3_inv_blur = 255 - bordered
+        blur_th3 = th3_inv_blur
+        #cv2.imshow("{0}".format(i + 1), th3_inv_blur)
+        # cv2.waitKey(0)
+        if new_word:
+            result.append(None)
+        #print("MAX: ", np.amax(blur_th3), " MIN: ", np.amin(blur_th3), " MEDIAN: ", np.median(blur_th3))
+        result.append([blur_th3.copy(), (x + w/2, y + h/2)])
+
+    visualization = [r[0] for r in result if r is not None]
+    debug_display("found letters", visualization)
+
+    return result
+
+def cutout_grayscale_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
+    #cv2.imshow("unwarped", unwarped_image)
+    result = []
+    prevX = None
+    prevY = None
+    for i, l in enumerate(sorted(letters, key=lambda x: (int(x[1] / Y_SQUASH), x[0]))):
+        new_word = False
+        x = l[0]
+        y = l[1]
+        w = l[2]
+        h = l[3]
+        if prevX is None:
+            distance = 0
+            prevX = x
+            prevY = y
+        else:
+            distance = dist(prevX, prevY, x, y)
+            prevX = x
+            prevY = y
+
+        if distance > w * 3:
+            new_word = True
+
+        cropped_letter = unwarped_image[y:y + h, x:x + w]
+        maxdim = max(h,w)
+        if h > w:
+            extra_height = 0
+            extra_width = int((h - w)/2)
+        else:
+            extra_height = int((w - h)/2)
+            extra_width = 0
+
+        #blur = cv2.GaussianBlur(cropped_letter, (3, 3), sigmaX=1, sigmaY=1)
+        blur = cv2.GaussianBlur(cropped_letter, (5, 5), 0)
+        ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        #cv2.imshow("otsu", th3)
+        #th4 = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
+        #                            cv2.THRESH_BINARY, 11, 2)
+        #cv2.imshow("adaptive", th4)
+
+        #th5 = th3.copy()
+        #cv2.multiply(255-th3, 255-th4, th5)
+        #th3 = 255-th5 
+        #cv2.imshow("multiplication", th3)
+        #cv2.waitKey(0)
 
         padded_cropped_letter = cv2.copyMakeBorder(th3, top=extra_height, bottom=extra_height,
                                                    left=extra_width, right = extra_width,
@@ -383,7 +470,7 @@ def predict(model, mapping, img):
 
 
 def cleanup_word(word, use_spellcheck_instead_of_commands_txt=False):
-    word = word.replace("0", "O").lower()
+    word = word.replace("0", "O").replace("2","b").replace("8", "b").lower()
     if use_spellcheck_instead_of_commands_txt:
         if GLOBAL_hobj.spell(word):
             print(word)
@@ -412,12 +499,12 @@ def fuzzy_correct(word, list_of_possible_words):
     return word
 
 def main():
-    bindir = "/home/shimpe/development/python/ocr/EMNIST/bin"
-    image = cv2.imread("/home/shimpe/development/python/ocr/img.jpg")
+    bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
+    image = cv2.imread("/home/shimpe/development/python/hippoglyph/img.jpg")
     cv2.imshow("original", image)
     model = load_model(bindir)
     mapping = pickle.load(open('%s/mapping.p' % bindir, 'rb'))
-
+    
     unwarped_image = unwarp(image)
     letters, letter_image = find_letters(unwarped_image)
     cut_letters = cutout_letters(unwarped_image, letters)
@@ -452,6 +539,111 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def main2():
+    bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
+    image = cv2.imread("/home/shimpe/development/python/hippoglyph/diagnostics/diagnostic_image.jpg")
+    cv2.imshow("original", image)
+    image = unwarp(image)
+    cv2.imshow("unwarped", image)
+    image = threshold_image(image)
+    cv2.imshow("threshold", image)
+    image = denoise_image(image)
+    cv2.imshow("denoise", image)
+    all_letters = segment_letters(image)
+    result = order_letters(all_letters)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def threshold_image(image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY);
+    image = cv2.bilateralFilter(image, 5, 21, 21)
+    ret3, image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+#    image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+#    image = cv2.copyMakeBorder(image, 6, 6, 6, 6, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+    return image
+
+
+def denoise_image(image):
+    morph = 255 - image
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    image = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
+    image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+    image = 255 - image
+    return image
+
+
+def order_letters(all_letters):
+    result = []
+    prevX = None
+    prevY = None
+    for i, l in enumerate(sorted(all_letters, key=lambda x: (int(x[1][1] / Y_SQUASH), x[1][0]))):
+        new_word = False
+        x = l[1][0]
+        y = l[1][1]
+        w = l[0].shape[1]
+        h = l[0].shape[0]
+        if prevX is None:
+            distance = 0
+            prevX = x
+            prevY = y
+        else:
+            distance = dist(prevX, prevY, x, y)
+            prevX = x
+            prevY = y
+
+        if distance > w * 3:
+            new_word = True
+
+        if new_word:
+            result.append(None)
+
+        result.append(l)
+    visualization = [r[0] for r in result if r is not None]
+    debug_display("found letters", visualization)
+    return result
+
+
+def segment_letters(image):
+    height, width = image.shape
+    all_letters = []
+    while True:
+        mask = np.zeros((height + 2, width + 2), np.uint8)
+        # cv2.imshow("mask before", mask)
+        indexzero = np.argwhere(image == 0)
+        if indexzero.size == 0:
+            break
+        indexzero = indexzero[0]
+        seed = (indexzero[1], indexzero[0])
+        floodflags = 4  # connectivity of 4
+        floodflags |= (255 << 8)
+        num, im, mask, rect = cv2.floodFill(image, mask, seed, (255, 0, 0), (0,) * 3, (0,) * 3, floodflags)
+        #cv2.imshow("image", image)
+        #cv2.imshow("mask", mask)
+        #cv2.waitKey(0)
+        mask = 255 - mask
+        edged = cv2.Canny(mask, 0, 100)
+        image3, contours3, hierarchy3 = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = []
+        found = set({})
+        for c in contours3:
+            M = cv2.moments(c)
+            if M['m00']:
+                cx = int(int(M['m10'] / M['m00']))
+                cy = int(int(M['m01'] / M['m00']))
+                if (cx, cy) not in found:
+                    found.add((cx, cy))
+                    cnts.append((cy, cx, c))
+        letters = contours_to_boundingboxes(cnts)
+        final_letters, unwarped_image = remove_doubles_and_overlaps(mask, letters)
+        letter = cutout_grayscale_letters(mask, final_letters)
+        if letter:
+            try:
+                letter_image, pos = letter[0][0], letter[0][1]
+                all_letters.append((letter_image, pos))
+            except IndexError as e:
+                print(e, letter)
+    return all_letters
 
 if __name__ == "__main__":
-    main()
+    main2()
