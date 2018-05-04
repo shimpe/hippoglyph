@@ -6,7 +6,7 @@ import numpy as np
 from keras.models import model_from_yaml
 from globals import GLOBAL_hobj, GLOBAL_fuzzylist
 
-Y_SQUASH = 75
+Y_SQUASH = 10.0
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -230,17 +230,20 @@ def remove_doubles_and_overlaps_for_single_letter(image, letters):
     miny = 1e10
     maxx = -1e10
     maxy = -1e10
-    for letter in final_letters:
-        x = letter[0]
-        x2 = x + letter[2]
-        y = letter[1]
-        y2 = y + letter[3]
-        minx = min([x,  minx])
-        maxx = max([x2, maxx])
-        miny = min([y, miny])
-        maxy = max([y2, maxy])
-    cv2.rectangle(boxed_image, (minx,miny), (maxx,maxy), 6)   
-    return [(minx, miny, maxx-minx, maxy-miny)], boxed_image
+    if final_letters:
+        for letter in final_letters:
+            x = letter[0]
+            x2 = x + letter[2]
+            y = letter[1]
+            y2 = y + letter[3]
+            minx = min([x,  minx])
+            maxx = max([x2, maxx])
+            miny = min([y, miny])
+            maxy = max([y2, maxy])
+        #print("minx, maxx, miny, maxy = ", [minx, maxx, miny, maxy])
+        cv2.rectangle(boxed_image, (minx,miny), (maxx,maxy), (0,0,0), 1)
+        return [(minx, miny, maxx-minx, maxy-miny)], boxed_image
+    return None, None
 
 def contours_to_boundingboxes(cnts):
     letters = []
@@ -294,7 +297,7 @@ def debug_display(title, list_of_images):
                 total_image[c*height : (c + 1)*height, r*width : (r + 1)*width] = list_of_images[counter]
                 counter += 1
     cv2.imshow(title, total_image)
-    cv2.waitKey(0)
+    cv2.waitKey(1)
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     unwarped_image = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2GRAY);
@@ -401,7 +404,7 @@ def cutout_grayscale_letters(unwarped_image, letters, xmargin=3, ymargin=3, desi
             extra_width = 0
 
         #blur = cv2.GaussianBlur(cropped_letter, (3, 3), sigmaX=1, sigmaY=1)
-        blur = cv2.GaussianBlur(cropped_letter, (5, 5), 0)
+        blur = cv2.GaussianBlur(cropped_letter, (1, 1), 0)
         ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         #cv2.imshow("otsu", th3)
         #th4 = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
@@ -558,24 +561,16 @@ def main():
     cv2.destroyAllWindows()
 
 def main2():
-    bindir = "c:\deleteme\hippoglyph\hippoglyph\EMNIST\bin"
-    image = cv2.imread("c:\deleteme\hippoglyph\hippoglyph\diagnostics\diagnostic_image.jpg")
+    #bindir = "c:\\deleteme\\hippoglyph\\hippoglyph\\EMNIST\\bin"
+    #image = cv2.imread("c:\\deleteme\\hippoglyph\\hippoglyph\\diagnostics\\diagnostic_image.jpg")
+    bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
+    image = cv2.imread("/home/shimpe/development/python/hippoglyph/diagnostics/diagnostic_image.jpg")
+
+
     #cv2.imshow("original", image)
     image = unwarp(image)
     #cv2.imshow("unwarped", image)
-
-    rgb_planes = cv2.split(image)
-    result_planes = [] 
-    result_norm_planes = [] 
-    for plane in rgb_planes:     
-        dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))     
-        bg_img = cv2.medianBlur(dilated_img, 21)     
-        diff_img = 255 - cv2.absdiff(plane, bg_img)     
-        norm_img = cv2.normalize(diff_img, diff_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)     
-#        result_planes.append(diff_img)     
-        result_norm_planes.append(norm_img)  
-    
-#    image = cv2.merge(result_planes) 
+    result_norm_planes = remove_shadow(image)
     image = cv2.merge(result_norm_planes)
     #cv2.imshow("shadow removal", image);
 
@@ -587,6 +582,22 @@ def main2():
     result = order_letters(all_letters)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+def remove_shadow(image):
+    rgb_planes = cv2.split(image)
+    result_planes = []
+    result_norm_planes = []
+    for plane in rgb_planes:
+        dilated_img = cv2.dilate(plane, np.ones((7, 7), np.uint8))
+        bg_img = cv2.medianBlur(dilated_img, 21)
+        diff_img = 255 - cv2.absdiff(plane, bg_img)
+        norm_img = cv2.normalize(diff_img, diff_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+        #        result_planes.append(diff_img)
+        result_norm_planes.append(norm_img)
+    image = cv2.merge(result_norm_planes)
+    #    image = cv2.merge(result_planes)
+    return image
 
 
 def threshold_image(image):
@@ -654,7 +665,7 @@ def segment_letters(image):
         num, im, mask, rect = cv2.floodFill(image, mask, seed, (255, 0, 0), (0,) * 3, (0,) * 3, floodflags)
         #cv2.imshow("image", image)
         #cv2.imshow("mask", mask)
-        cv2.waitKey(0)
+        #cv2.waitKey(0)
         mask = 255 - mask
         edged = cv2.Canny(mask, 0, 100)
         image3, contours3, hierarchy3 = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -669,16 +680,19 @@ def segment_letters(image):
                     found.add((cx, cy))
                     cnts.append((cy, cx, c))
         letters = contours_to_boundingboxes(cnts)
-        final_letters, boxed_image = remove_doubles_and_overlaps_for_single_letter(mask, letters)
-        #cv2.imshow("boxed", boxed_image)
-        #cv2.waitKey(0)
-        letter = cutout_grayscale_letters(mask, final_letters)
-        if letter:
-            try:
-                letter_image, pos = letter[0][0], letter[0][1]
-                all_letters.append((letter_image, pos))
-            except IndexError as e:
-                print(e, letter)
+        if letters:
+            final_letters, boxed_image = remove_doubles_and_overlaps_for_single_letter(mask, letters)
+            #cv2.imshow("boxed", boxed_image)
+            #cv2.waitKey(0)
+            if final_letters:
+                letter = cutout_grayscale_letters(mask, final_letters)
+                if letter:
+                    try:
+                        letter_image, pos = letter[0][0], letter[0][1]
+                        all_letters.append((letter_image, pos))
+                    except IndexError as e:
+                        print(e, letter)
+
     return all_letters
 
 if __name__ == "__main__":

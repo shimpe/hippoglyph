@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
 
 from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
 from extract import load_model, unwarp, cleanup_word, predict, \
-    threshold_image, denoise_image, segment_letters, order_letters
+    threshold_image, denoise_image, segment_letters, order_letters, remove_shadow
 from mymodel import MyModel
 from mycontroller import MyController
 from ui_mainwindow import Ui_MainWindow
@@ -64,16 +64,17 @@ class MyCanvas(object):
             self.counter += 1
             if ok and (self.counter % READ_INTERVAL == 0):
                 unwarped_image = self.image_to_words(image)
-                mapped_words = []
-                for i, w in enumerate(self.words):
-                    imgw = unwarped_image.shape[1]
-                    mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, 1023)
-                    imgh = unwarped_image.shape[0]
-                    mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, 599)
-                    if w is not None:
-                        mapped_words.append((w, mapped_x, mapped_y))
-                self.datamodel.words = mapped_words
-                self.display_model()
+                if unwarped_image is not None:
+                    mapped_words = []
+                    for i, w in enumerate(self.words):
+                        imgw = unwarped_image.shape[1]
+                        mapped_x = Mapping.linlin(w[1][0], 0, imgw, 0, 1023)
+                        imgh = unwarped_image.shape[0]
+                        mapped_y = Mapping.linlin(w[1][1], 0, imgh, 0, 599)
+                        if w is not None:
+                            mapped_words.append((w, mapped_x, mapped_y))
+                    self.datamodel.words = mapped_words
+                    self.display_model()
 
             camBounds = self.camera_scene.itemsBoundingRect()
             camBounds.setWidth(camBounds.width() * 1.01)
@@ -86,10 +87,20 @@ class MyCanvas(object):
         if unwarped_image is None:
             print("SKIP DETECTION")
         else:
-            image = threshold_image(unwarped_image)
-            image = denoise_image(image)
+            # cv2.imshow("original", image)
+            image = unwarp(image)
+            # cv2.imshow("unwarped", image)
+            image = remove_shadow(image)
+            import cv2
+            #cv2.imshow("shadow removal", image);
+            image = threshold_image(image)
+            #cv2.imshow("threshold", image)
+            #image = denoise_image(image)
+            #cv2.imshow("denoise", image)
+            #cv2.waitKey(0)
             all_letters = segment_letters(image)
             cut_letters = order_letters(all_letters)
+
             self.words = []
             current_word = ""
             avgX = 0
