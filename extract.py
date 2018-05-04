@@ -103,15 +103,15 @@ def unwarp(image):
 
     warped = four_point_transform(img_scale, screenCnt.reshape(4, 2))
     #cv2.imshow("warped", warped)
-    #height = warped.shape[0]
-    #width = warped.shape[1]
+    height = warped.shape[0]
+    width = warped.shape[1]
     #print ("width: {0}, height: {1}".format(width, height))
-    #xmargin = 10
-    #ymargin = 10
-    #crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
+    xmargin = 10
+    ymargin = 10
+    crop_img = warped[ymargin:(height - 2 * ymargin), xmargin:(width - 2 * xmargin)]  # img[y: y + h, x: x + w]
     #cv2.imshow("cropped", crop_img)
     #cv2.waitKey(0)
-    return warped
+    return crop_img
 
 
 # Malisiewicz et al.
@@ -216,7 +216,7 @@ def remove_doubles_and_overlaps(image, letters):
     # print (remove_idx)
     final_letters = [letter for (i, letter) in enumerate(numpy_letters) if i not in remove_idx]
     unwarped_image = image.copy()
-    for i, l in enumerate(final_letters):
+    for l in final_letters:
         x = l[0]
         y = l[1]
         x2 = x + l[2]
@@ -224,6 +224,23 @@ def remove_doubles_and_overlaps(image, letters):
         cv2.rectangle(unwarped_image, (x, y), (x2, y2), 3)
     return final_letters, unwarped_image
 
+def remove_doubles_and_overlaps_for_single_letter(image, letters):
+    final_letters, boxed_image = remove_doubles_and_overlaps(image, letters)
+    minx = 1e10
+    miny = 1e10
+    maxx = -1e10
+    maxy = -1e10
+    for letter in final_letters:
+        x = letter[0]
+        x2 = x + letter[2]
+        y = letter[1]
+        y2 = y + letter[3]
+        minx = min([x,  minx])
+        maxx = max([x2, maxx])
+        miny = min([y, miny])
+        maxy = max([y2, maxy])
+    cv2.rectangle(boxed_image, (minx,miny), (maxx,maxy), 6)   
+    return [(minx, miny, maxx-minx, maxy-miny)], boxed_image
 
 def contours_to_boundingboxes(cnts):
     letters = []
@@ -277,6 +294,7 @@ def debug_display(title, list_of_images):
                 total_image[c*height : (c + 1)*height, r*width : (r + 1)*width] = list_of_images[counter]
                 counter += 1
     cv2.imshow(title, total_image)
+    cv2.waitKey(0)
 
 def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     unwarped_image = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2GRAY);
@@ -501,7 +519,7 @@ def fuzzy_correct(word, list_of_possible_words):
 def main():
     bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
     image = cv2.imread("/home/shimpe/development/python/hippoglyph/img.jpg")
-    cv2.imshow("original", image)
+    #cv2.imshow("original", image)
     model = load_model(bindir)
     mapping = pickle.load(open('%s/mapping.p' % bindir, 'rb'))
     
@@ -540,15 +558,31 @@ def main():
     cv2.destroyAllWindows()
 
 def main2():
-    bindir = "/home/shimpe/development/python/hippoglyph/EMNIST/bin"
-    image = cv2.imread("/home/shimpe/development/python/hippoglyph/diagnostics/diagnostic_image.jpg")
-    cv2.imshow("original", image)
+    bindir = "c:\deleteme\hippoglyph\hippoglyph\EMNIST\bin"
+    image = cv2.imread("c:\deleteme\hippoglyph\hippoglyph\diagnostics\diagnostic_image.jpg")
+    #cv2.imshow("original", image)
     image = unwarp(image)
-    cv2.imshow("unwarped", image)
+    #cv2.imshow("unwarped", image)
+
+    rgb_planes = cv2.split(image)
+    result_planes = [] 
+    result_norm_planes = [] 
+    for plane in rgb_planes:     
+        dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))     
+        bg_img = cv2.medianBlur(dilated_img, 21)     
+        diff_img = 255 - cv2.absdiff(plane, bg_img)     
+        norm_img = cv2.normalize(diff_img, diff_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)     
+#        result_planes.append(diff_img)     
+        result_norm_planes.append(norm_img)  
+    
+#    image = cv2.merge(result_planes) 
+    image = cv2.merge(result_norm_planes)
+    #cv2.imshow("shadow removal", image);
+
     image = threshold_image(image)
-    cv2.imshow("threshold", image)
-    image = denoise_image(image)
-    cv2.imshow("denoise", image)
+    #cv2.imshow("threshold", image)
+    #image = denoise_image(image)
+    #cv2.imshow("denoise", image)
     all_letters = segment_letters(image)
     result = order_letters(all_letters)
     cv2.waitKey(0)
@@ -609,7 +643,7 @@ def segment_letters(image):
     all_letters = []
     while True:
         mask = np.zeros((height + 2, width + 2), np.uint8)
-        # cv2.imshow("mask before", mask)
+        #cv2.imshow("mask before", mask)
         indexzero = np.argwhere(image == 0)
         if indexzero.size == 0:
             break
@@ -620,7 +654,7 @@ def segment_letters(image):
         num, im, mask, rect = cv2.floodFill(image, mask, seed, (255, 0, 0), (0,) * 3, (0,) * 3, floodflags)
         #cv2.imshow("image", image)
         #cv2.imshow("mask", mask)
-        #cv2.waitKey(0)
+        cv2.waitKey(0)
         mask = 255 - mask
         edged = cv2.Canny(mask, 0, 100)
         image3, contours3, hierarchy3 = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -635,7 +669,9 @@ def segment_letters(image):
                     found.add((cx, cy))
                     cnts.append((cy, cx, c))
         letters = contours_to_boundingboxes(cnts)
-        final_letters, unwarped_image = remove_doubles_and_overlaps(mask, letters)
+        final_letters, boxed_image = remove_doubles_and_overlaps_for_single_letter(mask, letters)
+        #cv2.imshow("boxed", boxed_image)
+        #cv2.waitKey(0)
         letter = cutout_grayscale_letters(mask, final_letters)
         if letter:
             try:
