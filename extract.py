@@ -6,7 +6,7 @@ import numpy as np
 from keras.models import model_from_yaml
 from globals import GLOBAL_hobj, GLOBAL_fuzzylist
 
-Y_SQUASH = 10.0
+Y_SQUASH = 40.0
 
 def order_points(pts):
     # initialzie a list of coordinates that will be ordered
@@ -250,7 +250,7 @@ def contours_to_boundingboxes(cnts):
     for i, c in enumerate(cnts):
         contour = c[2]
         peri = cv2.arcLength(contour, True)
-        approx = cv2.approxPolyDP(contour, 0.2 * peri, True)
+        approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
         x, y, w, h = cv2.boundingRect(contour)
         letters.append((x, y, w, h))
         # print(x, y, w, h)
@@ -374,25 +374,12 @@ def cutout_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=
 def cutout_grayscale_letters(unwarped_image, letters, xmargin=3, ymargin=3, desired_width=28, desired_height=28):
     #cv2.imshow("unwarped", unwarped_image)
     result = []
-    prevX = None
-    prevY = None
-    for i, l in enumerate(sorted(letters, key=lambda x: (int(x[1] / Y_SQUASH), x[0]))):
+    for l in letters:
         new_word = False
         x = l[0]
         y = l[1]
         w = l[2]
         h = l[3]
-        if prevX is None:
-            distance = 0
-            prevX = x
-            prevY = y
-        else:
-            distance = dist(prevX, prevY, x, y)
-            prevX = x
-            prevY = y
-
-        if distance > w * 3:
-            new_word = True
 
         cropped_letter = unwarped_image[y:y + h, x:x + w]
         maxdim = max(h,w)
@@ -440,8 +427,6 @@ def cutout_grayscale_letters(unwarped_image, letters, xmargin=3, ymargin=3, desi
         blur_th3 = th3_inv_blur
         #cv2.imshow("{0}".format(i + 1), th3_inv_blur)
         # cv2.waitKey(0)
-        if new_word:
-            result.append(None)
         #print("MAX: ", np.amax(blur_th3), " MIN: ", np.amin(blur_th3), " MEDIAN: ", np.median(blur_th3))
         result.append([blur_th3.copy(), (x + w/2, y + h/2)])
 
@@ -622,7 +607,11 @@ def order_letters(all_letters):
     result = []
     prevX = None
     prevY = None
-    for i, l in enumerate(sorted(all_letters, key=lambda x: (int(x[1][1] / Y_SQUASH), x[1][0]))):
+    maxh = -1e10
+    for l in all_letters:
+        h = l[0].shape[0]
+        maxh = max([h,maxh])
+    for i, l in enumerate(sorted(all_letters, key=lambda x: (int(x[1][1] / maxh), x[1][0]))):
         new_word = False
         x = l[1][0]
         y = l[1][1]
