@@ -4,7 +4,7 @@ import os
 
 
 @contextlib.contextmanager
-def CameraResource(no_of_cameras, camId, save_diagnostics=True, load_diagnostics=False):
+def CameraResource(no_of_cameras, camId, save_diagnostics=False, load_diagnostics=False):
     class MyCamera(object):
         def __init__(self, no_of_cameras, camId, save_diagnostics=save_diagnostics, load_diagnostics=load_diagnostics):
             self.no_of_cameras = no_of_cameras

@@ -3,6 +3,7 @@ import difflib
 
 import cv2
 import numpy as np
+from cluster import cluster_letters_to_words
 from keras.models import model_from_yaml
 from globals import GLOBAL_hobj, GLOBAL_fuzzylist
 
@@ -428,7 +429,7 @@ def cutout_grayscale_letters(unwarped_image, letters, xmargin=3, ymargin=3, desi
         #cv2.imshow("{0}".format(i + 1), th3_inv_blur)
         # cv2.waitKey(0)
         #print("MAX: ", np.amax(blur_th3), " MIN: ", np.amin(blur_th3), " MEDIAN: ", np.median(blur_th3))
-        result.append([blur_th3.copy(), (x + w/2, y + h/2)])
+        result.append([blur_th3.copy(), (x, y, w, h)]) # or: y + h : use bottom point as reference instead of middle
 
     visualization = [r[0] for r in result if r is not None]
     debug_display("found letters", visualization)
@@ -604,35 +605,21 @@ def denoise_image(image):
 
 
 def order_letters(all_letters):
-    result = []
-    prevX = None
-    prevY = None
-    maxh = -1e10
-    for l in all_letters:
-        h = l[0].shape[0]
-        maxh = max([h,maxh])
-    for i, l in enumerate(sorted(all_letters, key=lambda x: (int(x[1][1] / maxh), x[1][0]))):
-        new_word = False
+    rectangles = []
+    for i, l in enumerate(all_letters):
         x = l[1][0]
         y = l[1][1]
-        w = l[0].shape[1]
-        h = l[0].shape[0]
-        if prevX is None:
-            distance = 0
-            prevX = x
-            prevY = y
-        else:
-            distance = dist(prevX, prevY, x, y)
-            prevX = x
-            prevY = y
+        w = l[1][2]
+        h = l[1][3]
+        rectangles.append([x, y, w, h, i])
+    words, id_to_rect, forbidden, ordering = cluster_letters_to_words(rectangles)
+    result = []
+    for order in ordering:
+        word = words[order]
+        for letter in word:
+            result.append(all_letters[int(letter)])
+        result.append(None)
 
-        if distance > w * 3:
-            new_word = True
-
-        if new_word:
-            result.append(None)
-
-        result.append(l)
     visualization = [r[0] for r in result if r is not None]
     debug_display("found letters", visualization)
     return result
