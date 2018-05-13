@@ -66,8 +66,8 @@ s.waitForBoot({
 		"si" : "b4"
 	]);
 
-	~lastattentionvalue = 0;
-	~lastmeditationvalue = 0;
+	~lastattentionvalue = 1;
+	~lastmeditationvalue = 1;
 
 	OSCdef(\raw).disable;
 	OSCdef.new(\raw, {
@@ -82,14 +82,14 @@ s.waitForBoot({
 		]);
 	}, "/mindwave/raw");
 
-	OSCdef(\attention).disable;
+	OSCdef(\attention).enable;
 	OSCdef(\attention, {
 		| msg, time, addr, recPort, argTemplate, dispatcher |
 		//msg.postln;
 		~lastattentionvalue = msg[1];
 	}, "/mindwave/attention");
 
-	OSCdef(\meditation).disable;
+	OSCdef(\meditation).enable;
 	OSCdef(\meditation, {
 		| msg, time, addr, recPort, argTemplate, dispatcher |
 		//msg.postln;
@@ -114,14 +114,26 @@ s.waitForBoot({
 				~melody_notes = ~melody_notes.add(note);
 			};
 		};
+		if (command.compare("bass", ignoreCase:true) == 0) {
+			~flags[\bass] = true;
+		};
+		if (command.compare("stopbass", ignoreCase:true) == 0) {
+			~flags[\bass] = false;
+		};
 		if (command.compare("jam", ignoreCase:true) == 0) {
 			~flags[\jam] = true;
 		};
 		if (command.compare("tweedestem", ignoreCase:true) == 0) {
 			~flags[\secondvoice] = true;
 		};
+		if (command.compare("stoptweedestem", ignoreCase:true) == 0) {
+			~flags[\secondvoice] = false;
+		};
 		if (command.compare("octavieer", ignoreCase:true) == 0) {
 			~flags[\octaviate] = true;
+		};
+		if (command.compare("stopoctavieer", ignoreCase:true) == 0) {
+			~flags[\octaviate] = false;
 		};
 		if (command.compare("stopnoten", ignoreCase:true) == 0) {
 			if (Pdef(\notes).isPlaying) {
@@ -175,11 +187,7 @@ s.waitForBoot({
 			OSCdef(\meditation).enable;
 			OSCdef(\eyeblink).enable;
 			if (~brainplayer.isNil && ~brainpattern.notNil) {
-				"YO".postln;
 				~brainplayer = ~brainpattern.play;
-			} {
-				("brainplayer = "++~brainplayer).postln;
-				("brainpattern = "++~brainpattern).postln;
 			};
 		};
 		if (command.compare("stopbrein", ignoreCase:true) == 0) {
@@ -418,7 +426,7 @@ s.waitForBoot({
 		\freq, Pfunc({(30+(~lastattentionvalue/2)).midicps}).trace,
 		\vibrato, Pfunc({(~lastmeditationvalue/10)}).trace,
 		\dur, 1,
-		\amp, 0.5,
+		\amp, 1.0,
 	);
 
 	~horror = wrapInit.(~synth, horrorpattern, "F3", "P28",	0);
@@ -533,6 +541,7 @@ s.waitForBoot({
 		~mplayer = nil;
 		~pplayer = nil;
 		~mysplayer = nil;
+		~brainplayer = nil;
 		CmdPeriod.remove(~killnotes);
 	};
 
@@ -654,7 +663,6 @@ s.waitForBoot({
 
 	~initpattern = wrapInit.(~synth, Ppar([melody,melody2,bass], 1), "F2", "P1", 0);
 	Pdef(\notes, ~initpattern);
-	Pdef(\notes).play;
 	CmdPeriod.add(~killnotes);
 });
 
