@@ -1,18 +1,19 @@
-import pickle
 import os
+import pickle
+from threading import RLock
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QGraphicsScene
-
-from constants import DELAY, INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
-from extract import load_model, unwarp, cleanup_word, predict, \
-    threshold_image, denoise_image, segment_letters, order_letters, remove_shadow
-from mymodel import MyModel
-from mycontroller import MyController
-from ui_mainwindow import Ui_MainWindow
 from vectortween.Mapping import Mapping
-from threading import RLock
+
+from constants import INPUT_INTERVAL, CAMWIDTH, CAMHEIGHT, READ_INTERVAL
+from extract import load_model, unwarp, cleanup_word, predict, \
+    threshold_image, segment_letters, order_letters, remove_shadow
+from mycontroller import MyController
+from mymodel import MyModel
+from ui_mainwindow import Ui_MainWindow
+
 
 class MyCanvas(object):
     def __init__(self, camera):
@@ -91,13 +92,12 @@ class MyCanvas(object):
             image = unwarp(image)
             # cv2.imshow("unwarped", image)
             image = remove_shadow(image)
-            import cv2
-            #cv2.imshow("shadow removal", image);
+            # cv2.imshow("shadow removal", image);
             image = threshold_image(image)
-            #cv2.imshow("threshold", image)
-            #image = denoise_image(image)
-            #cv2.imshow("denoise", image)
-            #cv2.waitKey(0)
+            # cv2.imshow("threshold", image)
+            # image = denoise_image(image)
+            # cv2.imshow("denoise", image)
+            # cv2.waitKey(0)
             all_letters = segment_letters(image)
             cut_letters = order_letters(all_letters)
 

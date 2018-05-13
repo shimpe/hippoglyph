@@ -1,5 +1,6 @@
 from myimage import MyImage
 
+
 class MyModel(object):
     def __init__(self):
         self.camera_image = None

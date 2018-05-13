@@ -1,12 +1,14 @@
 import sys
+
 from PyQt5.QtWidgets import QApplication
 
 from constants import CAMWIDTH, CAMHEIGHT
 from mycamera import CameraResource
 from mycanvas import MyCanvas
 
-CAMID = 0      #1
-NO_OF_CAM = 0  #2
+CAMID = 0  # 1
+NO_OF_CAM = 0  # 2
+
 
 def main():
     app = QApplication(sys.argv)

@@ -3,6 +3,7 @@ from pythonosc import udp_client
 SUPERCOLLIDER_PORT = 57120
 GODOT_PORT = 23000
 
+
 class MyController(object):
     def __init__(self, datamodel, verbose=True):
         self.verbose = verbose
